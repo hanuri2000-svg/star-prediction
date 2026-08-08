@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="승자예측">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>스타 승자예측</title>
+<style>
+:root{--bg:#0a0f1e;--panel:#141b2d;--panel2:#1b2540;--line:#2a3657;--text:#f6f8ff;--muted:#9da9c4;--accent:#7788ff;--good:#30d07b;--bad:#ff6577;--gold:#ffd166}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+button,input,textarea{font:inherit}
+.wrap{max-width:1280px;margin:auto;padding:16px}
+header{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:24px;margin:0 auto 0 0}
+.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:11px;padding:10px 13px;font-weight:800;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:transparent}.btn.good{background:#174d35}.btn.danger{background:#542332}.btn:disabled{opacity:.45;cursor:not-allowed}
+.layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr);gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px}
+.card h2{font-size:16px;margin:0 0 12px}.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.match{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin:14px 0}
+.player{background:var(--panel2);padding:16px 10px;border-radius:14px;text-align:center;font-size:22px;font-weight:900}.vs{color:var(--muted);font-weight:900}
+.status{font-size:13px;color:var(--muted);margin:8px 0 12px}.status b{color:var(--gold)}
+.pred-list{display:grid;gap:8px}.pred{display:grid;grid-template-columns:150px 1fr 1fr;gap:8px;align-items:center;background:#10172a;padding:8px;border-radius:12px}
+.name{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pick{min-height:44px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;font-weight:800;cursor:pointer}
+.pick.on{outline:2px solid var(--accent);background:#29356c}.pick.correct{outline:2px solid var(--good)}.pick.wrong{outline:2px solid var(--bad)}
+.resultbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:center}th{font-size:12px;color:var(--muted)}td:nth-child(2){text-align:left;font-weight:900}
+.hist{padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer}.hist.current{background:#1d2743;border-radius:8px;padding-left:8px}.small{font-size:12px;color:var(--muted)}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:18px;z-index:20}.modal.show{display:flex}.dialog{width:min(520px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:17px}
+.dialog h3{margin:0 0 12px}.field{display:grid;gap:6px;margin:10px 0}.field input,.field textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px}.field textarea{min-height:230px;resize:vertical}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111a2e;border:1px solid var(--line);padding:10px 14px;border-radius:999px;display:none;z-index:30}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.pred{grid-template-columns:105px 1fr 1fr}.player{font-size:18px}.wrap{padding:12px}h1{font-size:20px}}
+@media(max-width:520px){header .btn{padding:9px 10px;font-size:13px}.pred{grid-template-columns:88px 1fr 1fr}.pick{font-size:13px}.player{font-size:17px;padding:13px 8px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>🎮 스타 승자예측</h1>
+  <button class="btn" onclick="openParticipants()">참가자</button>
+  <button class="btn" onclick="openTournament()">대회명</button>
+  <button class="btn" onclick="exportData()">백업</button>
+  <label class="btn" style="cursor:pointer">복원<input id="restoreFile" type="file" accept="application/json" hidden onchange="restoreData(event)"></label>
+  <button class="btn danger" onclick="resetTournament()">대회 초기화</button>
+</header>
+
+<div class="layout">
+<section class="card">
+  <h2 id="tourTitle">대회</h2>
+  <div class="toolbar">
+    <button class="btn primary" onclick="openNewMatch()">＋ 새 경기</button>
+    <button class="btn" onclick="duplicateMatch()">이전 대진 복사</button>
+    <button class="btn" id="lockBtn" onclick="toggleLock()">🔒 예측 마감</button>
+  </div>
+
+  <div class="match">
+    <div class="player" id="p1">선수 A</div><div class="vs">VS</div><div class="player" id="p2">선수 B</div>
+  </div>
+  <div class="status" id="status">새 경기를 등록해줘.</div>
+  <div class="pred-list" id="predList"></div>
+
+  <div class="resultbar">
+    <button class="btn good" id="win1" onclick="setWinner(1)">선수 A 승</button>
+    <button class="btn good" id="win2" onclick="setWinner(2)">선수 B 승</button>
+    <button class="btn" onclick="clearWinner()">결과 취소</button>
+    <button class="btn danger" onclick="deleteCurrentMatch()">경기 삭제</button>
+  </div>
+</section>
+
+<aside>
+  <section class="card">
+    <h2>🏆 현재 순위</h2>
+    <table><thead><tr><th>순위</th><th>참가자</th><th>적중</th><th>오답</th><th>적중률</th></tr></thead><tbody id="rankBody"></tbody></table>
+  </section>
+  <section class="card" style="margin-top:14px">
+    <h2>📋 경기 기록</h2>
+    <div id="history"></div>
+  </section>
+</aside>
+</div>
+</div>
+
+<div class="modal" id="modal"><div class="dialog" id="dialog"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='starPredictionManager_v2';
+function blank(){return {tournament:'새 대회',participants:[],matches:[],current:-1,version:2}}
+let data=load();
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||blank()}catch(e){return blank()}}
+function save(msg){localStorage.setItem(KEY,JSON.stringify(data));render();if(msg)toast(msg)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function current(){return data.matches[data.current]||null}
+function toast(msg){let t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(window.__tt);window.__tt=setTimeout(()=>t.style.display='none',1600)}
+function render(){
+ const m=current();
+ document.getElementById('tourTitle').textContent='🏟️ '+data.tournament;
+ document.getElementById('p1').textContent=m?m.p1:'선수 A';
+ document.getElementById('p2').textContent=m?m.p2:'선수 B';
+ document.getElementById('win1').textContent=(m?m.p1:'선수 A')+' 승';
+ document.getElementById('win2').textContent=(m?m.p2:'선수 B')+' 승';
+ document.getElementById('lockBtn').textContent=m&&m.locked?'🔓 예측 다시 열기':'🔒 예측 마감';
+ let cnt=m?Object.keys(m.picks||{}).length:0;
+ document.getElementById('status').innerHTML=m?`${data.current+1}경기 · 예측 ${cnt}/${data.participants.length}명 · <b>${m.locked?'마감':'진행중'}</b>${m.winner?` · 결과 <b>${esc(m.winner===1?m.p1:m.p2)} 승</b>`:''}`:'새 경기를 등록해줘.';
+ const pl=document.getElementById('predList');pl.innerHTML='';
+ data.participants.forEach(n=>{
+   const pick=m?.picks?.[n];
+   const d=document.createElement('div');d.className='pred';
+   const c1=m?.winner&&pick===1?(m.winner===1?'correct':'wrong'):'';
+   const c2=m?.winner&&pick===2?(m.winner===2?'correct':'wrong'):'';
+   d.innerHTML=`<div class="name">${esc(n)}</div>
+   <button class="pick ${pick===1?'on':''} ${c1}" ${!m||m.locked||m.winner?'disabled':''} onclick="pick('${encodeURIComponent(n)}',1)">${esc(m?.p1||'A')}</button>
+   <button class="pick ${pick===2?'on':''} ${c2}" ${!m||m.locked||m.winner?'disabled':''} onclick="pick('${encodeURIComponent(n)}',2)">${esc(m?.p2||'B')}</button>`;
+   pl.appendChild(d);
+ });
+ renderRanks();renderHistory();
+}
+function stats(name){let hit=0,miss=0;data.matches.forEach(m=>{if(m.winner&&m.picks?.[name])m.picks[name]===m.winner?hit++:miss++});return{hit,miss,total:hit+miss,rate:hit+miss?hit/(hit+miss):0}}
+function renderRanks(){
+ let arr=data.participants.map(n=>({n,...stats(n)})).sort((a,b)=>b.hit-a.hit||b.rate-a.rate||a.n.localeCompare(b.n,'ko'));
+ let rank=0,last='';document.getElementById('rankBody').innerHTML=arr.map((x,i)=>{let key=x.hit+'-'+x.rate;if(key!==last)rank=i+1;last=key;return`<tr><td>${rank}</td><td>${esc(x.n)}</td><td>${x.hit}</td><td>${x.miss}</td><td>${x.total?(x.rate*100).toFixed(1):'0'}%</td></tr>`}).join('');
+}
+function renderHistory(){
+ document.getElementById('history').innerHTML=[...data.matches].reverse().map((m,ri)=>{let i=data.matches.length-ri-1;let w=m.winner?(m.winner===1?m.p1:m.p2)+' 승':'결과 대기';return`<div class="hist ${i===data.current?'current':''}" onclick="data.current=${i};save()"><b>${i+1}경기 ${esc(m.p1)} vs ${esc(m.p2)}</b><div class="small">${esc(w)} · 예측 ${Object.keys(m.picks||{}).length}명</div></div>`}).join('')||'<div class="small">아직 경기 기록이 없어.</div>';
+}
+function pick(enc,v){let m=current();if(!m||m.locked||m.winner)return;m.picks[decodeURIComponent(enc)]=v;save()}
+function toggleLock(){let m=current();if(!m)return;m.locked=!m.locked;save(m.locked?'예측 마감':'예측 다시 열림')}
+function setWinner(v){let m=current();if(!m)return;if(!m.locked&&!confirm('예측이 열려 있어. 마감하고 결과를 입력할까?'))return;m.locked=true;m.winner=v;save('결과 반영 완료')}
+function clearWinner(){let m=current();if(!m)return;m.winner=null;save('결과 취소')}
+function duplicateMatch(){let m=current();if(!m)return;data.matches.push({p1:m.p1,p2:m.p2,picks:{},locked:false,winner:null});data.current=data.matches.length-1;save('대진 복사 완료')}
+function deleteCurrentMatch(){if(data.current<0||!confirm('현재 경기를 삭제할까?'))return;data.matches.splice(data.current,1);data.current=Math.min(data.current,data.matches.length-1);save('경기 삭제')}
+function resetTournament(){if(!confirm('경기/예측/순위를 초기화할까? 참가자 명단은 유지돼.'))return;data.matches=[];data.current=-1;save('대회 초기화')}
+function modal(html){document.getElementById('dialog').innerHTML=html;document.getElementById('modal').classList.add('show')}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()})
+function openNewMatch(){modal(`<h3>새 경기</h3><div class="field"><label>선수 A</label><input id="np1" autofocus></div><div class="field"><label>선수 B</label><input id="np2"></div><div class="toolbar"><button class="btn primary" onclick="addMatch()">경기 시작</button><button class="btn" onclick="closeModal()">취소</button></div>`)}
+function addMatch(){let a=document.getElementById('np1').value.trim(),b=document.getElementById('np2').value.trim();if(!a||!b)return alert('두 선수 이름을 입력해줘.');data.matches.push({p1:a,p2:b,picks:{},locked:false,winner:null});data.current=data.matches.length-1;closeModal();save('새 경기 등록')}
+function openParticipants(){modal(`<h3>참가자 관리</h3><div class="field"><label>한 줄에 한 명씩</label><textarea id="plist">${esc(data.participants.join('\n'))}</textarea></div><div class="toolbar"><button class="btn primary" onclick="saveParticipants()">저장</button><button class="btn" onclick="closeModal()">취소</button></div>`)}
+function saveParticipants(){let a=document.getElementById('plist').value.split(/\n/).map(x=>x.trim()).filter(Boolean);data.participants=[...new Set(a)];closeModal();save('참가자 저장')}
+function openTournament(){modal(`<h3>대회명</h3><div class="field"><input id="tname" value="${esc(data.tournament)}"></div><div class="toolbar"><button class="btn primary" onclick="saveTournament()">저장</button><button class="btn" onclick="closeModal()">취소</button></div>`)}
+function saveTournament(){data.tournament=document.getElementById('tname').value.trim()||'새 대회';closeModal();save('대회명 저장')}
+function exportData(){
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`승자예측_${data.tournament}_${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function restoreData(e){
+ const f=e.target.files[0];if(!f)return;
+ const r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x||!Array.isArray(x.participants)||!Array.isArray(x.matches))throw 0;data=x;save('복원 완료')}catch(_){alert('올바른 백업 파일이 아니야.')}e.target.value=''};r.readAsText(f);
+}
+render();
+</script>
+</body>
+</html>
