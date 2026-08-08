@@ -1,4 +1,4 @@
-const SW_VERSION='3.3.0';
+const SW_VERSION='3.4.0';
 self.addEventListener('install',event=>self.skipWaiting());
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{

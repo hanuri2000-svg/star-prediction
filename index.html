@@ -30,7 +30,7 @@ button,input,textarea,select{font:inherit}.wrap{max-width:1280px;margin:auto;pad
 <body>
 <div class="wrap">
 <header>
-<h1>🎮 스타 승자예측 <span style="font-size:11px;color:var(--muted);font-weight:700">v3.3</span></h1>
+<h1>🎮 스타 승자예측 <span style="font-size:11px;color:var(--muted);font-weight:700">v3.4</span></h1>
 <button class="btn" onclick="openParticipants()">참가자</button>
 <button class="btn" onclick="openEventSettings()">대회/팀 설정</button>
 <button class="btn" onclick="openSchedule()">대진표 관리</button>
@@ -136,10 +136,107 @@ function saveParticipants(){data.participants=[...new Set(document.getElementByI
 function openEventSettings(){modal(`<h3>대회 / 팀 설정</h3><div class="field"><label>대회명</label><input id="tname" value="${esc(data.tournament)}"></div><div class="grid2"><div class="field"><label>팀 A</label><input id="ta" value="${esc(data.teamA)}" placeholder="예: NEWCATSLE"></div><div class="field"><label>팀 B</label><input id="tb" value="${esc(data.teamB)}" placeholder="예: 상대팀"></div></div><div class="hint">팀명을 비우면 개인전처럼 사용할 수 있어.</div><div class="toolbar"><button class="btn primary" onclick="saveEventSettings()">저장</button><button class="btn" onclick="closeModal()">취소</button></div>`)}
 function saveEventSettings(){data.tournament=document.getElementById('tname').value.trim()||'새 대회';data.teamA=document.getElementById('ta').value.trim();data.teamB=document.getElementById('tb').value.trim();closeModal();save()}
 
+
+function openSchedule(){
+  const rows=data.matches.map((m,i)=>`${i+1}|${m.p1}|${m.p2}`).join('\n');
+  modal(`<h3>대진표 관리</h3>
+    <div class="field">
+      <label>경기순서|왼쪽선수|오른쪽선수</label>
+      <textarea id="scheduleList" placeholder="1|키링|상대선수A&#10;2|박듀듀|상대선수B&#10;3|백갑숙|상대선수C">${esc(rows)}</textarea>
+    </div>
+    <div class="hint">팀전이면 왼쪽=팀 A, 오른쪽=팀 B로 자동 적용돼.</div>
+    <div class="toolbar" style="margin-top:12px">
+      <button class="btn primary" onclick="saveSchedule()">대진표 저장</button>
+      <button class="btn" onclick="closeModal()">취소</button>
+    </div>`);
+}
+
+function saveSchedule(){
+  const lines=document.getElementById('scheduleList').value.split(/\n/).map(x=>x.trim()).filter(Boolean);
+  const old=data.matches.slice();
+  const parsed=[];
+
+  for(const line of lines){
+    const parts=line.split('|').map(x=>x.trim());
+    if(parts.length<3) continue;
+    const order=parseInt(parts[0],10);
+    const p1=parts[1], p2=parts[2];
+    if(!p1||!p2) continue;
+
+    const prev=old.find(m=>m.p1===p1 && m.p2===p2 && !parsed.some(x=>x._prev===m));
+    parsed.push({
+      order:Number.isFinite(order)?order:9999,
+      p1,p2,
+      team1:data.teamA?'A':'',
+      team2:data.teamB?'B':'',
+      picks:prev?.picks||{},
+      locked:prev?.locked||false,
+      winner:prev?.winner||null,
+      _prev:prev||null
+    });
+  }
+
+  parsed.sort((a,b)=>a.order-b.order);
+  data.matches=parsed.map(({order,_prev,...m})=>m);
+  data.current=data.matches.length?0:-1;
+  closeModal();
+  save();
+}
+
+function openNewMatch(){
+  modal(`<h3>경기 추가</h3>
+    <div class="grid2">
+      <div class="field"><label>왼쪽 선수</label><input id="np1" placeholder="선수명"></div>
+      <div class="field"><label>오른쪽 선수</label><input id="np2" placeholder="선수명"></div>
+    </div>
+    <div class="hint">팀전이면 왼쪽=팀 A, 오른쪽=팀 B로 자동 적용돼.</div>
+    <div class="toolbar" style="margin-top:12px">
+      <button class="btn primary" onclick="addMatch()">추가</button>
+      <button class="btn" onclick="closeModal()">취소</button>
+    </div>`);
+}
+
+function addMatch(){
+  const a=document.getElementById('np1').value.trim();
+  const b=document.getElementById('np2').value.trim();
+  if(!a||!b) return alert('두 선수 이름을 입력해줘.');
+
+  data.matches.push({
+    p1:a,
+    p2:b,
+    team1:data.teamA?'A':'',
+    team2:data.teamB?'B':'',
+    picks:{},
+    locked:false,
+    winner:null
+  });
+
+  if(data.current<0) data.current=0;
+  closeModal();
+  save();
+}
+
+function nextMatch(){
+  if(!data.matches.length) return;
+  if(data.current<data.matches.length-1){
+    data.current++;
+    save();
+  }else{
+    alert('마지막 경기야.');
+  }
+}
+
+function prevMatch(){
+  if(data.current>0){
+    data.current--;
+    save();
+  }
+}
+
 function exportData(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='승자예측_'+data.tournament+'.json';a.click()}
 function restoreData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.participants)||!Array.isArray(x.matches))throw 0;data=x;save()}catch(_){alert('올바른 백업 파일이 아니야.')}};r.readAsText(f)}
 
-const APP_VERSION='3.3.0';
+const APP_VERSION='3.4.0';
 let __updateBusy=false;
 
 async function checkForUpdate(force=false){
@@ -173,7 +270,7 @@ async function checkForUpdate(force=false){
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=3.3.0',{updateViaCache:'none'});
+      const reg=await navigator.serviceWorker.register('./sw.js?v=3.4.0',{updateViaCache:'none'});
       reg.update().catch(()=>{});
     }catch(e){ console.warn('SW 등록 실패',e); }
     checkForUpdate(false);
