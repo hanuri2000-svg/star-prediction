@@ -1,16 +1,14 @@
-스타 승자예측 관리툴 v3
+스타 승자예측 관리툴 v3.1
 
-추가:
-- 개인전/팀전 겸용
-- 대회명 + 팀 A/B 설정
+수정:
+- iPhone에서 팀 선택 안정성 개선
+- 드롭다운 대신 큰 팀 선택 버튼
+- 팀 선택 시 해당 팀 선수만 즉시 표시
+- 왼쪽/오른쪽 각각 팀 선택 가능
+- 개인전 버튼 지원
+- 선수 직접 입력 지원
 - 팀 스코어 자동 집계
-- 선수 명단 사전 등록(선수명|A/B)
-- 새 경기에서 소속팀과 선수 선택
-- 참가자 예측/자동 채점/순위/적중률
-- 백업/복원
-- iPhone/PC 반응형
-- GitHub Pages 배포 가능
+- 개인전/팀전 겸용
 
-GitHub Pages:
-index.html, manifest.webmanifest 업로드
-Settings > Pages > Deploy from a branch > main / (root)
+GitHub 업로드:
+index.html, manifest.webmanifest 두 파일을 저장소 최상단에 업로드
