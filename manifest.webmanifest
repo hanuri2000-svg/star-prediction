@@ -5,6 +5,5 @@
   "display": "standalone",
   "background_color": "#0a0f1e",
   "theme_color": "#0b1020",
-  "lang": "ko-KR",
-  "description": "스타크래프트 대회 승자예측과 자동 순위 관리"
+  "lang": "ko-KR"
 }
