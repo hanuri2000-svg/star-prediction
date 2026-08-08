@@ -30,10 +30,10 @@ button,input,textarea,select{font:inherit}.wrap{max-width:1280px;margin:auto;pad
 <body>
 <div class="wrap">
 <header>
-<h1>🎮 스타 승자예측 <span style="font-size:11px;color:var(--muted);font-weight:700">v3.2</span></h1>
+<h1>🎮 스타 승자예측 <span style="font-size:11px;color:var(--muted);font-weight:700">v3.3</span></h1>
 <button class="btn" onclick="openParticipants()">참가자</button>
 <button class="btn" onclick="openEventSettings()">대회/팀 설정</button>
-<button class="btn" onclick="openRoster()">선수 명단</button>
+<button class="btn" onclick="openSchedule()">대진표 관리</button>
 <button class="btn" onclick="exportData()">백업</button>
 <button class="btn" onclick="checkForUpdate(true)">업데이트 확인</button>
 <label class="btn">복원<input id="restoreFile" type="file" accept="application/json" hidden onchange="restoreData(event)"></label>
@@ -50,7 +50,9 @@ button,input,textarea,select{font:inherit}.wrap{max-width:1280px;margin:auto;pad
 </div>
 
 <div class="toolbar">
-<button class="btn primary" onclick="openNewMatch()">＋ 새 경기</button>
+<button class="btn primary" onclick="openNewMatch()">＋ 경기 추가</button>
+<button class="btn" onclick="prevMatch()">◀ 이전 경기</button>
+<button class="btn" onclick="nextMatch()">다음 경기 ▶</button>
 <button class="btn" onclick="duplicateMatch()">이전 대진 복사</button>
 <button class="btn" id="lockBtn" onclick="toggleLock()">🔒 예측 마감</button>
 </div>
@@ -82,7 +84,7 @@ button,input,textarea,select{font:inherit}.wrap{max-width:1280px;margin:auto;pad
 
 <script>
 const KEY='starPredictionManager_v31';
-function blank(){return {tournament:'새 대회',teamA:'',teamB:'',participants:[],roster:[],matches:[],current:-1,version:31}}
+function blank(){return {tournament:'새 대회',teamA:'',teamB:'',participants:[],matches:[],current:-1,version:31}}
 let data=load();
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||blank()}catch(e){return blank()}}
 function save(){localStorage.setItem(KEY,JSON.stringify(data));render()}
@@ -134,59 +136,10 @@ function saveParticipants(){data.participants=[...new Set(document.getElementByI
 function openEventSettings(){modal(`<h3>대회 / 팀 설정</h3><div class="field"><label>대회명</label><input id="tname" value="${esc(data.tournament)}"></div><div class="grid2"><div class="field"><label>팀 A</label><input id="ta" value="${esc(data.teamA)}" placeholder="예: NEWCATSLE"></div><div class="field"><label>팀 B</label><input id="tb" value="${esc(data.teamB)}" placeholder="예: 상대팀"></div></div><div class="hint">팀명을 비우면 개인전처럼 사용할 수 있어.</div><div class="toolbar"><button class="btn primary" onclick="saveEventSettings()">저장</button><button class="btn" onclick="closeModal()">취소</button></div>`)}
 function saveEventSettings(){data.tournament=document.getElementById('tname').value.trim()||'새 대회';data.teamA=document.getElementById('ta').value.trim();data.teamB=document.getElementById('tb').value.trim();closeModal();save()}
 
-function openRoster(){modal(`<h3>선수 명단</h3><div class="field"><label>선수명|팀코드(A/B)</label><textarea id="rlist">${esc(data.roster.map(x=>x.name+'|'+(x.team||'')).join('\n'))}</textarea></div><div class="hint">예: 키링|A<br>박듀듀|A<br>상대선수|B<br>김택용|</div><div class="toolbar"><button class="btn primary" onclick="saveRoster()">저장</button><button class="btn" onclick="closeModal()">취소</button></div>`)}
-function saveRoster(){let out=[],seen=new Set();document.getElementById('rlist').value.split(/\n/).map(x=>x.trim()).filter(Boolean).forEach(line=>{let [name,team='']=line.split('|').map(x=>x.trim());team=team.toUpperCase();if(!['A','B'].includes(team))team='';if(name&&!seen.has(name)){seen.add(name);out.push({name,team})}});data.roster=out;closeModal();save()}
-
-let nm={t1:'',t2:'',p1:'',p2:''};
-function openNewMatch(){
- nm={t1:data.teamA?'A':'',t2:data.teamB?'B':'',p1:'',p2:''};
- modal(`<h3>새 경기</h3>
- <div class="grid2">
-   <div class="sidebox">
-     <h4>왼쪽 선수</h4>
-     <div class="teamchoices">
-       <button class="teamchoice" id="lA" onclick="selectTeam(1,'A')">${esc(data.teamA||'팀 A')}</button>
-       <button class="teamchoice" id="lB" onclick="selectTeam(1,'B')">${esc(data.teamB||'팀 B')}</button>
-       <button class="teamchoice" id="lN" onclick="selectTeam(1,'')">개인전</button>
-     </div>
-     <div class="playerlist" id="players1"></div>
-     <div class="field"><input id="manual1" placeholder="또는 선수명 직접 입력" oninput="manualPlayer(1,this.value)"></div>
-   </div>
-   <div class="sidebox">
-     <h4>오른쪽 선수</h4>
-     <div class="teamchoices">
-       <button class="teamchoice" id="rA" onclick="selectTeam(2,'A')">${esc(data.teamA||'팀 A')}</button>
-       <button class="teamchoice" id="rB" onclick="selectTeam(2,'B')">${esc(data.teamB||'팀 B')}</button>
-       <button class="teamchoice" id="rN" onclick="selectTeam(2,'')">개인전</button>
-     </div>
-     <div class="playerlist" id="players2"></div>
-     <div class="field"><input id="manual2" placeholder="또는 선수명 직접 입력" oninput="manualPlayer(2,this.value)"></div>
-   </div>
- </div>
- <div class="hint" style="margin-top:10px">팀 버튼을 누르면 그 팀에 등록된 선수만 표시돼. 선수 명단이 없어도 직접 입력 가능해.</div>
- <div class="toolbar" style="margin-top:12px"><button class="btn primary" onclick="addMatch()">경기 시작</button><button class="btn" onclick="closeModal()">취소</button></div>`);
- refreshNewMatch();
-}
-function selectTeam(side,team){if(side===1){nm.t1=team;nm.p1='';document.getElementById('manual1').value=''}else{nm.t2=team;nm.p2='';document.getElementById('manual2').value=''}refreshNewMatch()}
-function manualPlayer(side,val){if(side===1)nm.p1=val.trim();else nm.p2=val.trim();refreshPlayerChips(side)}
-function choosePlayer(side,name){if(side===1){nm.p1=name;document.getElementById('manual1').value=name}else{nm.p2=name;document.getElementById('manual2').value=name}refreshPlayerChips(side)}
-function refreshNewMatch(){
- [['lA',nm.t1==='A'],['lB',nm.t1==='B'],['lN',nm.t1===''],['rA',nm.t2==='A'],['rB',nm.t2==='B'],['rN',nm.t2==='']].forEach(([id,on])=>{let e=document.getElementById(id);if(e)e.classList.toggle('on',on)});
- refreshPlayerChips(1);refreshPlayerChips(2);
-}
-function refreshPlayerChips(side){
- const team=side===1?nm.t1:nm.t2, selected=side===1?nm.p1:nm.p2;
- const arr=data.roster.filter(x=>team?x.team===team:true);
- const box=document.getElementById('players'+side); if(!box)return;
- box.innerHTML=arr.length?arr.map(x=>`<button class="playerchip ${selected===x.name?'on':''}" onclick="choosePlayer(${side},'${encodeURIComponent(x.name)}')">${esc(x.name)}</button>`).join(''):'<span class="small">등록된 선수가 없어.</span>';
- [...box.querySelectorAll('.playerchip')].forEach(b=>{const raw=b.getAttribute('onclick'); if(raw) b.setAttribute('onclick',raw.replace(/'([^']+)'/,(_,v)=>`'${decodeURIComponent(v)}'`))});
-}
-function addMatch(){if(!nm.p1||!nm.p2)return alert('두 선수를 선택하거나 직접 입력해줘.');data.matches.push({p1:nm.p1,p2:nm.p2,team1:nm.t1,team2:nm.t2,picks:{},locked:false,winner:null});data.current=data.matches.length-1;closeModal();save()}
-
 function exportData(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='승자예측_'+data.tournament+'.json';a.click()}
 function restoreData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.participants)||!Array.isArray(x.matches))throw 0;data=x;save()}catch(_){alert('올바른 백업 파일이 아니야.')}};r.readAsText(f)}
 
-const APP_VERSION='3.2.0';
+const APP_VERSION='3.3.0';
 let __updateBusy=false;
 
 async function checkForUpdate(force=false){
@@ -220,7 +173,7 @@ async function checkForUpdate(force=false){
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=3.2.0',{updateViaCache:'none'});
+      const reg=await navigator.serviceWorker.register('./sw.js?v=3.3.0',{updateViaCache:'none'});
       reg.update().catch(()=>{});
     }catch(e){ console.warn('SW 등록 실패',e); }
     checkForUpdate(false);

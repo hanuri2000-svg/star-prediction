@@ -1,4 +1,4 @@
-const SW_VERSION='3.2.0';
+const SW_VERSION='3.3.0';
 self.addEventListener('install',event=>self.skipWaiting());
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
@@ -13,10 +13,7 @@ self.addEventListener('fetch',event=>{
   const url=new URL(req.url);
   if(url.origin!==location.origin) return;
   event.respondWith((async()=>{
-    try{
-      return await fetch(req,{cache:'no-store'});
-    }catch(e){
-      return fetch(req);
-    }
+    try{return await fetch(req,{cache:'no-store'});}
+    catch(e){return fetch(req);}
   })());
 });
