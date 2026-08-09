@@ -1,11 +1,11 @@
 {
-  "name": "스타 승자예측 관리툴",
-  "short_name": "승자예측",
+  "name": "맞혀도랑",
+  "short_name": "맞혀도랑",
   "start_url": "./?app=1",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0a0f1e",
-  "theme_color": "#0b1020",
+  "background_color": "#f7f4fb",
+  "theme_color": "#8d6fd1",
   "lang": "ko-KR",
-  "description": "스타크래프트 개인전/팀전 승자예측 및 대진표/자동 순위 관리"
+  "description": "방송용 스타 승부예측 관리 웹앱"
 }
