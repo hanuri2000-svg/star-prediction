@@ -1,4 +1,4 @@
-name: Apply v5.6 EloBoard player DB integration
+name: Remove EloBoard auto race integration
 
 on:
   workflow_dispatch:
@@ -10,108 +10,111 @@ permissions:
   contents: write
 
 jobs:
-  patch:
+  cleanup:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Patch 맞혀도랑 to v5.6
+      - name: Remove EloBoard sync and keep manual race selection
         shell: python
         run: |
           from pathlib import Path
-          import json
+          import json, re
 
           p=Path('index.html')
           html=p.read_text(encoding='utf-8')
 
-          def once(old,new,label):
-              global html
-              if old not in html:
-                  raise SystemExit(label+' pattern not found')
-              html=html.replace(old,new,1)
+          # Remove v5.6 player DB-only CSS.
+          html=re.sub(
+              r'\n/\* ===== v5\.6 EloBoard player DB ===== \*/\n.*?input\[list\]\{padding-right:26px\}\n',
+              '\n', html, count=1, flags=re.S
+          )
 
-          html=html.replace('v5.5</span>','v5.6</span>')
-          html=html.replace("const APP_VERSION='5.5.0';","const APP_VERSION='5.6.0';")
-          html=html.replace('sw.js?v=5.5.0','sw.js?v=5.6.0')
+          # Remove EloBoard player DB JavaScript block.
+          html=re.sub(
+              r'\nlet eloPlayers=\[\];.*?\nlet scheduleDraft=\[\];',
+              '\nlet scheduleDraft=[];', html, count=1, flags=re.S
+          )
 
-          if 'v5.6 EloBoard player DB' not in html:
-              css=r'''
-          /* ===== v5.6 EloBoard player DB ===== */
-          .player-db-note{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:8px 0 2px;color:#9aa5c3;font-size:11px}
-          .player-db-note b{color:#cbbfff}
-          .db-dot{width:7px;height:7px;border-radius:50%;background:#45d6a0;box-shadow:0 0 0 3px rgba(69,214,160,.10)}
-          .db-dot.off{background:#7c849d;box-shadow:none}
-          input[list]{padding-right:26px}
-          '''
-              html=html.replace('</style>',css+'\n</style>',1)
+          # Remove DB status/datalist from schedule dialog.
+          html=html.replace('    ${eloDbNote()}\n    ${eloDatalist()}\n','')
 
-          if 'let eloPlayers=[];' not in html:
-              js=r'''
-          let eloPlayers=[];
-          let eloPlayerMap=new Map();
-          let eloDbMeta={count:0,updated_at:null};
-          function normalizePlayerName(v){return String(v||'').trim().replace(/\s+/g,' ')}
-          function rebuildEloPlayerMap(){
-            eloPlayerMap=new Map();
-            for(const p of eloPlayers){
-              const name=normalizePlayerName(p?.name),race=String(p?.race||'').toUpperCase();
-              if(name&&['P','T','Z'].includes(race))eloPlayerMap.set(name,race);
-            }
-          }
-          async function loadEloPlayers(){
-            try{
-              const r=await fetch('./players.json?t='+Date.now(),{cache:'no-store'});
-              if(!r.ok)throw new Error('player db fetch failed');
-              const j=await r.json();
-              eloPlayers=Array.isArray(j.players)?j.players:[];
-              eloDbMeta={count:Number(j.count||eloPlayers.length||0),updated_at:j.updated_at||null};
-              rebuildEloPlayerMap();
-            }catch(e){console.warn('EloBoard 선수 DB 로드 실패',e);eloPlayers=[];eloPlayerMap=new Map();eloDbMeta={count:0,updated_at:null}}
-          }
-          function eloRace(name){return eloPlayerMap.get(normalizePlayerName(name))||''}
-          function eloDatalist(){return `<datalist id="eloPlayersList">${eloPlayers.map(p=>`<option value="${esc(p.name)}">${esc(p.race)}</option>`).join('')}</datalist>`}
-          function eloDbNote(){
-            const ok=eloDbMeta.count>0;let date='';
-            if(eloDbMeta.updated_at){try{date=new Date(eloDbMeta.updated_at).toLocaleDateString('ko-KR')}catch(e){}}
-            return `<div class="player-db-note"><span class="db-dot ${ok?'':'off'}"></span>${ok?`EloBoard 선수 DB <b>${eloDbMeta.count}명</b>${date?' · '+date:''} · 이름 선택 시 종족 자동 지정`:'선수 DB 불러오기 실패 · 종족은 수동 선택 가능'}</div>`;
-          }
-          function autoRaceFor(inputId,selectId){
-            const input=document.getElementById(inputId),select=document.getElementById(selectId);if(!input||!select)return;
-            const race=eloRace(input.value);if(race)select.value=race;
-          }
-          function scheduleNameInput(i,side,el){
-            const key=side===1?'p1':'p2',raceKey=side===1?'race1':'race2';scheduleDraft[i][key]=el.value;
-            const race=eloRace(el.value);if(race){scheduleDraft[i][raceKey]=race;const sel=el.closest('.schedule-row')?.querySelector(side===1?'.race1-select':'.race2-select');if(sel)sel.value=race}
-          }
-          '''
-              once('let scheduleDraft=[];',js+'\nlet scheduleDraft=[];','schedule marker')
+          # Restore plain schedule name inputs; keep manual race selectors.
+          html=html.replace(
+              '<input class="p1-input" list="eloPlayersList" value="${esc(r.p1)}" placeholder="${esc(data.teamA||\'왼쪽 선수\')}" oninput="scheduleNameInput(${i},1,this)">',
+              '<input class="p1-input" value="${esc(r.p1)}" placeholder="${esc(data.teamA||\'왼쪽 선수\')}" oninput="scheduleDraft[${i}].p1=this.value">'
+          )
+          html=html.replace(
+              '<input class="p2-input" list="eloPlayersList" value="${esc(r.p2)}" placeholder="${esc(data.teamB||\'오른쪽 선수\')}" oninput="scheduleNameInput(${i},2,this)">',
+              '<input class="p2-input" value="${esc(r.p2)}" placeholder="${esc(data.teamB||\'오른쪽 선수\')}" oninput="scheduleDraft[${i}].p2=this.value">'
+          )
 
-          once('    <div class="schedule-head">\n      <div>경기</div>', '    ${eloDbNote()}\n    ${eloDatalist()}\n    <div class="schedule-head">\n      <div>경기</div>','schedule note')
-          once('<input class="p1-input" value="${esc(r.p1)}" placeholder="${esc(data.teamA||\'왼쪽 선수\')}" oninput="scheduleDraft[${i}].p1=this.value">','<input class="p1-input" list="eloPlayersList" value="${esc(r.p1)}" placeholder="${esc(data.teamA||\'왼쪽 선수\')}" oninput="scheduleNameInput(${i},1,this)">','schedule p1')
-          once('<input class="p2-input" value="${esc(r.p2)}" placeholder="${esc(data.teamB||\'오른쪽 선수\')}" oninput="scheduleDraft[${i}].p2=this.value">','<input class="p2-input" list="eloPlayersList" value="${esc(r.p2)}" placeholder="${esc(data.teamB||\'오른쪽 선수\')}" oninput="scheduleNameInput(${i},2,this)">','schedule p2')
+          # Restore plain new-match inputs and remove DB note.
+          html=html.replace(
+              '<input id="np1" list="eloPlayersList" placeholder="선수명" oninput="autoRaceFor(\'np1\',\'nr1\')">',
+              '<input id="np1" placeholder="선수명">'
+          )
+          html=html.replace(
+              '<input id="np2" list="eloPlayersList" placeholder="선수명" oninput="autoRaceFor(\'np2\',\'nr2\')">',
+              '<input id="np2" placeholder="선수명">'
+          )
+          html=html.replace('    ${eloDatalist()}\n    ${eloDbNote()}\n','')
+          html=html.replace(
+              '    <div class="hint">팀전이면 왼쪽=팀 A, 오른쪽=팀 B로 자동 적용돼. DB에 없는 선수는 종족을 직접 선택하면 돼.</div>',
+              '    <div class="hint">팀전이면 왼쪽=팀 A, 오른쪽=팀 B로 자동 적용돼. 종족은 직접 선택하면 돼.</div>'
+          )
 
-          once('<input id="np1" placeholder="선수명">','<input id="np1" list="eloPlayersList" placeholder="선수명" oninput="autoRaceFor(\'np1\',\'nr1\')">','new match p1')
-          once('<input id="np2" placeholder="선수명">','<input id="np2" list="eloPlayersList" placeholder="선수명" oninput="autoRaceFor(\'np2\',\'nr2\')">','new match p2')
-          once('    <div class="hint">팀전이면 왼쪽=팀 A, 오른쪽=팀 B로 자동 적용돼.</div>','    ${eloDatalist()}\n    ${eloDbNote()}\n    <div class="hint">팀전이면 왼쪽=팀 A, 오른쪽=팀 B로 자동 적용돼. DB에 없는 선수는 종족을 직접 선택하면 돼.</div>','new match db note')
+          # Race is now always taken only from the manual selectors.
+          html=html.replace(
+              "  const race1=document.getElementById('nr1')?.value||eloRace(a)||'';\n  const race2=document.getElementById('nr2')?.value||eloRace(b)||'';",
+              "  const race1=document.getElementById('nr1')?.value||'';\n  const race2=document.getElementById('nr2')?.value||'';"
+          )
 
-          once("  const b=document.getElementById('np2').value.trim();\n  if(!a||!b) return alert('두 선수 이름을 입력해줘.');", "  const b=document.getElementById('np2').value.trim();\n  const race1=document.getElementById('nr1')?.value||eloRace(a)||'';\n  const race2=document.getElementById('nr2')?.value||eloRace(b)||'';\n  if(!a||!b) return alert('두 선수 이름을 입력해줘.');",'add match race vars')
-          once('    p2:b,\n    team1:data.teamA?', '    p2:b,\n    race1,\n    race2,\n    team1:data.teamA?','add match race fields')
-          once("window.addEventListener('DOMContentLoaded',applyViewMode);","window.addEventListener('DOMContentLoaded',()=>{applyViewMode();loadEloPlayers();});",'db startup')
+          # Stop loading player DB at startup.
+          html=html.replace(
+              "window.addEventListener('DOMContentLoaded',()=>{applyViewMode();loadEloPlayers();});",
+              "window.addEventListener('DOMContentLoaded',applyViewMode);"
+          )
+
+          # Version bump.
+          html=html.replace('v5.6</span>','v5.7</span>')
+          html=html.replace("const APP_VERSION='5.6.0';","const APP_VERSION='5.7.0';")
+          html=html.replace('sw.js?v=5.6.0','sw.js?v=5.7.0')
+
+          # Safety check: no EloBoard auto-race runtime references should remain.
+          banned=['eloPlayersList','eloDbNote','eloRace(','loadEloPlayers','scheduleNameInput','autoRaceFor']
+          remain=[x for x in banned if x in html]
+          if remain:
+              raise SystemExit('EloBoard references remain: '+', '.join(remain))
 
           p.write_text(html,encoding='utf-8')
-          Path('version.json').write_text(json.dumps({'version':'5.6.0','updated':'2026-08-25','notes':'EloBoard 선수명/종족 자동 동기화 및 경기 추가·대진표 종족 자동 지정'},ensure_ascii=False,indent=2),encoding='utf-8')
-          Path('sw.js').write_text("""const SW_VERSION='5.6.0';
+
+          Path('version.json').write_text(json.dumps({
+              'version':'5.7.0',
+              'updated':'2026-08-25',
+              'notes':'EloBoard 자동 종족 지정 제거 · 경기 추가/대진표 종족 수동 선택 유지'
+          },ensure_ascii=False,indent=2),encoding='utf-8')
+
+          Path('sw.js').write_text("""const SW_VERSION='5.7.0';
           self.addEventListener('install',e=>self.skipWaiting());
           self.addEventListener('activate',e=>e.waitUntil((async()=>{const k=await caches.keys();await Promise.all(k.map(x=>caches.delete(x)));await self.clients.claim()})()));
           self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;const u=new URL(r.url);if(u.origin!==location.origin)return;e.respondWith((async()=>{try{return await fetch(r,{cache:'no-store'})}catch(x){return fetch(r)}})())});
           """,encoding='utf-8')
 
-      - name: Commit v5.6
+          # Delete unused sync assets.
+          for f in [
+              Path('players.json'),
+              Path('scripts/sync_eloboard_players.py'),
+              Path('.github/workflows/sync-eloboard-players.yml')
+          ]:
+              if f.exists(): f.unlink()
+
+      - name: Commit cleanup
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html version.json sw.js
-          git commit -m "Update 맞혀도랑 to v5.6 EloBoard player DB"
+          git add -A
+          git commit -m "Remove EloBoard auto race integration and release v5.7"
           git push
