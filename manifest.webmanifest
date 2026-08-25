@@ -4,8 +4,8 @@
   "start_url": "./?app=1",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f8f6fb",
-  "theme_color": "#8c70c7",
+  "background_color": "#080b14",
+  "theme_color": "#8067ff",
   "lang": "ko-KR",
   "description": "방송용 스타 승부예측 및 순위 관리 웹앱"
 }

@@ -222,12 +222,41 @@ body.force-desktop .dialog.schedule-dialog{width:min(1180px,calc(100vw - 32px))!
   .schedule-dialog > .toolbar .btn:first-child{grid-column:1/-1}
 }
 
+
+/* ===== v5.4 HARINA MATCHROOM-inspired dark UI ===== */
+:root{--bg:#080b14;--panel:#121728;--panel2:#0d1220;--line:#29324d;--text:#f4f6ff;--muted:#929bb8;--accent:#8067ff;--accent2:#d584aa;--good:#45d6a0;--bad:#ff8fa3;--gold:#ffd670;--shadow:0 16px 40px rgba(0,0,0,.28)}
+html{background:#080b14}
+body{background:radial-gradient(circle at 18% -12%,rgba(77,58,155,.42) 0,transparent 32%),radial-gradient(circle at 90% 0%,rgba(139,60,112,.25) 0,transparent 28%),var(--bg);color:var(--text)}
+.wrap{max-width:1500px;padding:18px 22px 34px}
+header{background:rgba(8,11,20,.9);border-bottom:1px solid rgba(67,76,112,.32);backdrop-filter:blur(16px);margin-bottom:16px;padding:12px 0}
+.brand h1{color:#fff;text-shadow:0 2px 18px rgba(128,103,255,.2)}.brand .subtitle{color:var(--muted)}
+.version{color:#b9abff;background:#211b3c;border:1px solid #4d4283;border-radius:999px;padding:3px 7px;margin-left:4px}
+.btn{color:var(--text);background:#161d30;border-color:#303a59;box-shadow:none;border-radius:9px}.btn:hover{transform:none;filter:brightness(1.12);border-color:#4c5880;box-shadow:none}
+.primary{background:linear-gradient(135deg,#8067ff,#6750d8);border-color:transparent;color:#fff}.good{color:#a4f1d2;background:#17352d;border-color:#2d6d59}.danger{color:#ff9bac;background:#25121a;border-color:#5a2b3b}.view-toggle{background:#121728}.save-state{color:#85cbb0;background:#10261f;border-color:#285948}
+.layout{grid-template-columns:minmax(720px,1.5fr) minmax(370px,.68fr);gap:14px}.card{background:linear-gradient(145deg,#151b2e,#101523);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:18px;padding:16px}.card h2{color:#fff}
+.team{background:#0d1220;border:1px solid #303958}.teamname{color:#dfe3f5}.teamboard .score{color:#d8ceff}.sep{color:#6e7897}
+.player{background:linear-gradient(145deg,#171d31,#0d1220);border:1px solid #303958;box-shadow:none;color:#fff;padding:16px 10px}.teamtag{color:#8490b0}
+.status{color:#aab3cf;background:#0d1220;border-color:#29324d}.status b{color:#ffd670}
+.vote-card,.missing-card{background:#0d1220;border:1px solid #29324d;color:#fff;border-radius:12px}.vote-card.left b{color:#ad9cff}.vote-card.right b{color:#e5a3c2}.vote-card span,.missing-card span{color:#8f99b7}.missing-card.active{background:#281721;border-color:#6d344b}
+.pred{background:#0d1220;border:1px solid #222b43;border-radius:10px}.name{color:#f5f6ff}.pick{background:#151c2d;border-color:#303a59;color:#eef1ff}.pick.on{background:linear-gradient(135deg,#8067ff,#b26c9a);box-shadow:none;color:#fff}
+.post-result-bar{background:linear-gradient(120deg,#171938,#251427);border-color:#453963}.post-result-text{color:#d7d0eb}
+table{color:#eef1ff}th{color:#858fab;border-bottom-color:#2a334f}td{border-bottom-color:#242d45}table tbody tr:hover{background:#141b2d}
+.hist{border:1px solid transparent;color:#edf0ff}.hist:hover{background:#151c2e;border-color:#29324d}.hist.current{background:linear-gradient(135deg,#222044,#25172d);border-color:#50456f}.small{color:#8993b0}
+.race-p{background:#253d78;color:#b8cbff;border-color:#3d61b0}.race-t{background:#6d302b;color:#ffc2b9;border-color:#a24e43}.race-z{background:#4f2b70;color:#dfbaff;border-color:#74449b}.race-r{background:#255544;color:#b8f2da;border-color:#3a8067}
+.dialog{background:linear-gradient(145deg,#151b2e,#101523);border-color:#313a58;box-shadow:0 24px 70px rgba(0,0,0,.55)}.dialog h3{color:#fff}.hint{color:#8d97b3}.field label{color:#939dbc}
+.field input,.field textarea,.field select,.schedule-row input,.race-select{background:#0c101d!important;color:#f4f6ff!important;border-color:#303a59!important}.field input:focus,.field textarea:focus,.field select:focus,.schedule-row input:focus,.race-select:focus{outline:none;border-color:#8067ff!important;box-shadow:0 0 0 2px rgba(128,103,255,.18)}
+.schedule-dialog .schedule-head{color:#8f99b7}.schedule-dialog .schedule-row{background:#0d1220;border-color:#29324d}.game-no{color:#d7c9ff}.mini{color:#eef1ff;background:#192138;border-color:#303a59}.mini.danger{background:#25121a;color:#ff9bac;border-color:#5a2b3b}.schedule-dialog>.toolbar{background:rgba(16,21,35,.97);border-top-color:#29324d}.modal{background:rgba(2,4,10,.78)}
+.credit{color:#5f6986}.credit b{color:#8d96b2}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-track{background:#0c101d}::-webkit-scrollbar-thumb{background:#3a4568;border-radius:10px}::-webkit-scrollbar-thumb:hover{background:#4c5982}
+@media(min-width:1101px){.wrap{max-width:1800px;padding:14px 18px 24px}header{margin-bottom:10px}.brand h1{font-size:30px}.subtitle{font-size:11px}.btn{padding:7px 10px;font-size:12px}.layout{gap:10px}.card{padding:11px 12px;border-radius:14px}.card h2{font-size:14px;margin-bottom:8px}.teamboard{margin:5px 0 8px}.team{padding:9px}.teamname{font-size:15px}.score{font-size:23px}.toolbar{gap:5px}.player{font-size:21px;padding:11px 8px}.match{margin:8px 0}.status{padding:7px 9px;margin:6px 0 8px;font-size:11px}.prediction-summary{margin:7px 0}.vote-card,.missing-card{padding:8px}.vote-card b,.missing-card b{font-size:15px}.pred-list{gap:4px}.pred{grid-template-columns:150px 1fr 1fr;padding:5px 6px;min-height:38px}.pick{min-height:34px;padding:6px;font-size:12px}.name{font-size:12px}.resultbar{margin-top:8px}th,td{padding:7px 5px;font-size:12px}.hist{padding:7px 8px;margin-bottom:3px}aside{top:76px;gap:10px;max-height:calc(100vh - 90px)}aside .card:last-child{max-height:46vh}}
+@media(max-width:700px){body:not(.force-desktop) .card{background:linear-gradient(145deg,#151b2e,#101523);border-color:#29324d}body:not(.force-desktop) header{background:transparent;border-bottom:0}body:not(.force-desktop) .btn{min-height:40px}}
+
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-<div class="brand"><h1><span class="brand-icon">🔮</span> 맞혀도랑 <span class="version">v5.3</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
+<div class="brand"><h1><span class="brand-icon">🔮</span> 맞혀도랑 <span class="version">v5.4</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
 <button class="btn" onclick="openParticipants()">참가자</button>
 <button class="btn" onclick="quickAddParticipant()">＋ 빠른 참가자</button>
 <button class="btn" onclick="openEventSettings()">대회/팀 설정</button>
@@ -617,7 +646,7 @@ function toggleDesktopMode(){
 }
 window.addEventListener('DOMContentLoaded',applyViewMode);
 
-const APP_VERSION='5.3.0';
+const APP_VERSION='5.4.0';
 let __updateBusy=false;
 
 async function checkForUpdate(force=false){
@@ -651,7 +680,7 @@ async function checkForUpdate(force=false){
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=5.3.0',{updateViaCache:'none'});
+      const reg=await navigator.serviceWorker.register('./sw.js?v=5.4.0',{updateViaCache:'none'});
       reg.update().catch(()=>{});
     }catch(e){ console.warn('SW 등록 실패',e); }
     checkForUpdate(false);
