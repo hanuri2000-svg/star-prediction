@@ -1,0 +1,62 @@
+name: Apply v5.9 race colors
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/patch-v59.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update race badge colors
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+
+          p=Path('index.html')
+          html=p.read_text(encoding='utf-8')
+
+          replacements={
+            '.race-p{background:#eee8ff;color:#6c55b5;border-color:#d8ccf7}':'.race-p{background:#fff4c7;color:#9a7513;border-color:#ead479}',
+            '.race-t{background:#e8f1ff;color:#4d72a8;border-color:#cbdcf3}':'.race-t{background:#e8f1ff;color:#4d72a8;border-color:#cbdcf3}',
+            '.race-z{background:#f6e8f3;color:#a35482;border-color:#e8cce0}':'.race-z{background:#f2e8ff;color:#7e4dab;border-color:#ddc9f3}',
+            '.race-p{background:#253d78;color:#b8cbff;border-color:#3d61b0}.race-t{background:#6d302b;color:#ffc2b9;border-color:#a24e43}.race-z{background:#4f2b70;color:#dfbaff;border-color:#74449b}.race-r{background:#255544;color:#b8f2da;border-color:#3a8067}':'.race-p{background:#5b4a12;color:#ffe78a;border-color:#9c7c22}.race-t{background:#173d78;color:#bcd6ff;border-color:#3567b8}.race-z{background:#4f2b70;color:#dfbaff;border-color:#74449b}.race-r{background:#255544;color:#b8f2da;border-color:#3a8067}',
+            'v5.8</span>':'v5.9</span>',
+            "const APP_VERSION='5.8.0';":"const APP_VERSION='5.9.0';",
+            'sw.js?v=5.8.0':'sw.js?v=5.9.0'
+          }
+          for old,new in replacements.items():
+            if old not in html:
+              raise SystemExit('pattern not found: '+old[:60])
+            html=html.replace(old,new,1)
+          p.write_text(html,encoding='utf-8')
+
+          Path('version.json').write_text(json.dumps({
+            'version':'5.9.0',
+            'updated':'2026-08-25',
+            'notes':'종족 배지 색상 정리 · 테란 T 파란색, 프로토스 P 노란색, 저그 Z 보라색'
+          },ensure_ascii=False,indent=2),encoding='utf-8')
+
+          Path('sw.js').write_text("""const SW_VERSION='5.9.0';
+          self.addEventListener('install',e=>self.skipWaiting());
+          self.addEventListener('activate',e=>e.waitUntil((async()=>{const k=await caches.keys();await Promise.all(k.map(x=>caches.delete(x)));await self.clients.claim()})()));
+          self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;const u=new URL(r.url);if(u.origin!==location.origin)return;e.respondWith((async()=>{try{return await fetch(r,{cache:'no-store'})}catch(x){return fetch(r)}})())});
+          """,encoding='utf-8')
+
+      - name: Commit v5.9
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html version.json sw.js
+          git commit -m "Set race colors and release v5.9"
+          git push
