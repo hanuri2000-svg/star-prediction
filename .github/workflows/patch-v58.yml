@@ -1,0 +1,90 @@
+name: Apply v5.8 player race memory
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/patch-v58.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add player race memory
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+
+          p=Path('index.html')
+          html=p.read_text(encoding='utf-8')
+
+          def once(old,new,label):
+              global html
+              if old not in html:
+                  raise SystemExit(label+' pattern not found')
+              html=html.replace(old,new,1)
+
+          html=html.replace('v5.7</span>','v5.8</span>',1)
+          html=html.replace("const APP_VERSION='5.7.0';","const APP_VERSION='5.8.0';",1)
+          html=html.replace('sw.js?v=5.7.0','sw.js?v=5.8.0',1)
+
+          once("function blank(){return {tournament:'새 대회',teamA:'',teamB:'',participants:[],matches:[],current:-1,version:31}}",
+               "function blank(){return {tournament:'새 대회',teamA:'',teamB:'',participants:[],matches:[],current:-1,playerRaces:{},version:31}}",
+               'blank data')
+
+          once("let data=load();\nlet missingOnly=false;",
+               "let data=load();\nfunction ensurePlayerRaceMemory(){if(!data.playerRaces||typeof data.playerRaces!=='object'||Array.isArray(data.playerRaces))data.playerRaces={}}\nfunction normalizePlayerKey(v){return String(v||'').trim().replace(/\\s+/g,' ').toLocaleLowerCase()}\nfunction rememberedRace(name){ensurePlayerRaceMemory();return data.playerRaces[normalizePlayerKey(name)]||''}\nfunction rememberRace(name,race){\n  ensurePlayerRaceMemory();\n  const key=normalizePlayerKey(name);if(!key)return;\n  const r=String(race||'').toUpperCase();\n  if(['P','T','Z','R'].includes(r))data.playerRaces[key]=r;else delete data.playerRaces[key];\n}\nfunction seedPlayerRaceMemory(){\n  ensurePlayerRaceMemory();\n  for(const m of (data.matches||[])){\n    const k1=normalizePlayerKey(m.p1),k2=normalizePlayerKey(m.p2);\n    if(k1&&!data.playerRaces[k1]&&['P','T','Z','R'].includes(m.race1||''))data.playerRaces[k1]=m.race1;\n    if(k2&&!data.playerRaces[k2]&&['P','T','Z','R'].includes(m.race2||''))data.playerRaces[k2]=m.race2;\n  }\n}\nfunction autoRememberedRace(inputId,selectId){\n  const input=document.getElementById(inputId),select=document.getElementById(selectId);if(!input||!select)return;\n  const r=rememberedRace(input.value);if(r)select.value=r;\n}\nfunction schedulePlayerInput(i,side,el){\n  const key=side===1?'p1':'p2',raceKey=side===1?'race1':'race2';\n  scheduleDraft[i][key]=el.value;\n  const r=rememberedRace(el.value);\n  if(r){scheduleDraft[i][raceKey]=r;const sel=el.closest('.schedule-row')?.querySelector(side===1?'.race1-select':'.race2-select');if(sel)sel.value=r}\n}\nensurePlayerRaceMemory();\nseedPlayerRaceMemory();\nlet missingOnly=false;",
+               'player race helpers')
+
+          once("<input class=\"p1-input\" value=\"${esc(r.p1)}\" placeholder=\"${esc(data.teamA||'왼쪽 선수')}\" oninput=\"scheduleDraft[${i}].p1=this.value\">",
+               "<input class=\"p1-input\" value=\"${esc(r.p1)}\" placeholder=\"${esc(data.teamA||'왼쪽 선수')}\" oninput=\"schedulePlayerInput(${i},1,this)\">",
+               'schedule p1')
+          once("<input class=\"p2-input\" value=\"${esc(r.p2)}\" placeholder=\"${esc(data.teamB||'오른쪽 선수')}\" oninput=\"scheduleDraft[${i}].p2=this.value\">",
+               "<input class=\"p2-input\" value=\"${esc(r.p2)}\" placeholder=\"${esc(data.teamB||'오른쪽 선수')}\" oninput=\"schedulePlayerInput(${i},2,this)\">",
+               'schedule p2')
+
+          once("  data.matches=clean.map(r=>({\n    p1:r.p1,p2:r.p2,",
+               "  clean.forEach(r=>{rememberRace(r.p1,r.race1||'');rememberRace(r.p2,r.race2||'')});\n\n  data.matches=clean.map(r=>({\n    p1:r.p1,p2:r.p2,",
+               'schedule remember')
+
+          once("<div class=\"field\"><label>왼쪽 선수</label><input id=\"np1\" placeholder=\"선수명\"></div>",
+               "<div class=\"field\"><label>왼쪽 선수</label><input id=\"np1\" placeholder=\"선수명\" oninput=\"autoRememberedRace('np1','nr1')\"></div>",
+               'new match p1')
+          once("<div class=\"field\"><label>오른쪽 선수</label><input id=\"np2\" placeholder=\"선수명\"></div>",
+               "<div class=\"field\"><label>오른쪽 선수</label><input id=\"np2\" placeholder=\"선수명\" oninput=\"autoRememberedRace('np2','nr2')\"></div>",
+               'new match p2')
+          html=html.replace('종족은 직접 선택하면 돼.</div>','처음 한 번 종족을 지정하면 다음부터 자동으로 기억해. 필요하면 직접 바꾸면 새 종족으로 갱신돼.</div>',1)
+
+          once("  if(!a||!b) return alert('두 선수 이름을 입력해줘.');\n\n  data.matches.push({",
+               "  if(!a||!b) return alert('두 선수 이름을 입력해줘.');\n  rememberRace(a,race1);\n  rememberRace(b,race2);\n\n  data.matches.push({",
+               'new match remember')
+
+          once("data=x;save()","data=x;ensurePlayerRaceMemory();seedPlayerRaceMemory();save()",'restore migration')
+
+          p.write_text(html,encoding='utf-8')
+          Path('version.json').write_text(json.dumps({
+            'version':'5.8.0',
+            'updated':'2026-08-25',
+            'notes':'선수 종족 기억 기능 추가 · 한 번 지정하면 자동 입력, 수동 변경 시 기억값 갱신'
+          },ensure_ascii=False,indent=2),encoding='utf-8')
+          Path('sw.js').write_text("""const SW_VERSION='5.8.0';
+          self.addEventListener('install',e=>self.skipWaiting());
+          self.addEventListener('activate',e=>e.waitUntil((async()=>{const k=await caches.keys();await Promise.all(k.map(x=>caches.delete(x)));await self.clients.claim()})()));
+          self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;const u=new URL(r.url);if(u.origin!==location.origin)return;e.respondWith((async()=>{try{return await fetch(r,{cache:'no-store'})}catch(x){return fetch(r)}})())});
+          """,encoding='utf-8')
+
+      - name: Commit v5.8
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html version.json sw.js
+          git commit -m "Add player race memory and release v5.8"
+          git push
