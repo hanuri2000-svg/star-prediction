@@ -301,7 +301,7 @@ header .danger{
 <body>
 <div class="wrap">
 <header>
-<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v5.7</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
+<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v5.8</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
 <button class="btn" onclick="openParticipants()">참가자</button>
 <button class="btn" onclick="quickAddParticipant()">＋ 빠른 참가자</button>
 <button class="btn" onclick="openEventSettings()">대회/팀 설정</button>
@@ -368,8 +368,37 @@ header .danger{
 
 <script>
 const KEY='starPredictionManager_v31';
-function blank(){return {tournament:'새 대회',teamA:'',teamB:'',participants:[],matches:[],current:-1,version:31}}
+function blank(){return {tournament:'새 대회',teamA:'',teamB:'',participants:[],matches:[],current:-1,playerRaces:{},version:31}}
 let data=load();
+function ensurePlayerRaceMemory(){if(!data.playerRaces||typeof data.playerRaces!=='object'||Array.isArray(data.playerRaces))data.playerRaces={}}
+function normalizePlayerKey(v){return String(v||'').trim().replace(/\s+/g,' ').toLocaleLowerCase()}
+function rememberedRace(name){ensurePlayerRaceMemory();return data.playerRaces[normalizePlayerKey(name)]||''}
+function rememberRace(name,race){
+  ensurePlayerRaceMemory();
+  const key=normalizePlayerKey(name);if(!key)return;
+  const r=String(race||'').toUpperCase();
+  if(['P','T','Z','R'].includes(r))data.playerRaces[key]=r;else delete data.playerRaces[key];
+}
+function seedPlayerRaceMemory(){
+  ensurePlayerRaceMemory();
+  for(const m of (data.matches||[])){
+    const k1=normalizePlayerKey(m.p1),k2=normalizePlayerKey(m.p2);
+    if(k1&&!data.playerRaces[k1]&&['P','T','Z','R'].includes(m.race1||''))data.playerRaces[k1]=m.race1;
+    if(k2&&!data.playerRaces[k2]&&['P','T','Z','R'].includes(m.race2||''))data.playerRaces[k2]=m.race2;
+  }
+}
+function autoRememberedRace(inputId,selectId){
+  const input=document.getElementById(inputId),select=document.getElementById(selectId);if(!input||!select)return;
+  const r=rememberedRace(input.value);if(r)select.value=r;
+}
+function schedulePlayerInput(i,side,el){
+  const key=side===1?'p1':'p2',raceKey=side===1?'race1':'race2';
+  scheduleDraft[i][key]=el.value;
+  const r=rememberedRace(el.value);
+  if(r){scheduleDraft[i][raceKey]=r;const sel=el.closest('.schedule-row')?.querySelector(side===1?'.race1-select':'.race2-select');if(sel)sel.value=r}
+}
+ensurePlayerRaceMemory();
+seedPlayerRaceMemory();
 let missingOnly=false;
 let previousRanks={};
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||blank()}catch(e){return blank()}}
@@ -554,9 +583,9 @@ function renderScheduleEditor(){
   box.innerHTML=scheduleDraft.map((r,i)=>`
     <div class="schedule-row">
       <div class="game-no">${i+1}</div>
-      <input class="p1-input" value="${esc(r.p1)}" placeholder="${esc(data.teamA||'왼쪽 선수')}" oninput="scheduleDraft[${i}].p1=this.value">
+      <input class="p1-input" value="${esc(r.p1)}" placeholder="${esc(data.teamA||'왼쪽 선수')}" oninput="schedulePlayerInput(${i},1,this)">
       <select class="race-select race1-select" onchange="scheduleDraft[${i}].race1=this.value">${raceOptions(r.race1||'')}</select>
-      <input class="p2-input" value="${esc(r.p2)}" placeholder="${esc(data.teamB||'오른쪽 선수')}" oninput="scheduleDraft[${i}].p2=this.value">
+      <input class="p2-input" value="${esc(r.p2)}" placeholder="${esc(data.teamB||'오른쪽 선수')}" oninput="schedulePlayerInput(${i},2,this)">
       <select class="race-select race2-select" onchange="scheduleDraft[${i}].race2=this.value">${raceOptions(r.race2||'')}</select>
       <div class="row-actions">
         <button class="mini" onclick="moveScheduleRow(${i},-1)" ${i===0?'disabled':''}>▲</button>
@@ -599,6 +628,8 @@ function saveSchedule(){
     return;
   }
 
+  clean.forEach(r=>{rememberRace(r.p1,r.race1||'');rememberRace(r.p2,r.race2||'')});
+
   data.matches=clean.map(r=>({
     p1:r.p1,p2:r.p2,
     race1:r.race1||'',race2:r.race2||'',
@@ -621,15 +652,15 @@ function openNewMatch(){
   modal(`<h3>경기 추가</h3>
     <div class="grid2">
       <div>
-        <div class="field"><label>왼쪽 선수</label><input id="np1" placeholder="선수명"></div>
+        <div class="field"><label>왼쪽 선수</label><input id="np1" placeholder="선수명" oninput="autoRememberedRace('np1','nr1')"></div>
         <div class="field"><label>종족</label><select id="nr1">${raceOptions('')}</select></div>
       </div>
       <div>
-        <div class="field"><label>오른쪽 선수</label><input id="np2" placeholder="선수명"></div>
+        <div class="field"><label>오른쪽 선수</label><input id="np2" placeholder="선수명" oninput="autoRememberedRace('np2','nr2')"></div>
         <div class="field"><label>종족</label><select id="nr2">${raceOptions('')}</select></div>
       </div>
     </div>
-    <div class="hint">팀전이면 왼쪽=팀 A, 오른쪽=팀 B로 자동 적용돼. 종족은 직접 선택하면 돼.</div>
+    <div class="hint">팀전이면 왼쪽=팀 A, 오른쪽=팀 B로 자동 적용돼. 처음 한 번 종족을 지정하면 다음부터 자동으로 기억해. 필요하면 직접 바꾸면 새 종족으로 갱신돼.</div>
     <div class="toolbar" style="margin-top:12px">
       <button class="btn primary" onclick="addMatch()">추가</button>
       <button class="btn" onclick="closeModal()">취소</button>
@@ -642,6 +673,8 @@ function addMatch(){
   const race1=document.getElementById('nr1')?.value||'';
   const race2=document.getElementById('nr2')?.value||'';
   if(!a||!b) return alert('두 선수 이름을 입력해줘.');
+  rememberRace(a,race1);
+  rememberRace(b,race2);
 
   data.matches.push({
     p1:a,
@@ -678,7 +711,7 @@ function prevMatch(){
 }
 
 function exportData(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='승자예측_'+data.tournament+'.json';a.click()}
-function restoreData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.participants)||!Array.isArray(x.matches))throw 0;data=x;save()}catch(_){alert('올바른 백업 파일이 아니야.')}};r.readAsText(f)}
+function restoreData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.participants)||!Array.isArray(x.matches))throw 0;data=x;ensurePlayerRaceMemory();seedPlayerRaceMemory();save()}catch(_){alert('올바른 백업 파일이 아니야.')}};r.readAsText(f)}
 
 
 const VIEW_MODE_KEY='majhyeodorang_view_mode';
@@ -696,7 +729,7 @@ function toggleDesktopMode(){
 }
 window.addEventListener('DOMContentLoaded',applyViewMode);
 
-const APP_VERSION='5.7.0';
+const APP_VERSION='5.8.0';
 let __updateBusy=false;
 
 async function checkForUpdate(force=false){
@@ -730,7 +763,7 @@ async function checkForUpdate(force=false){
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=5.7.0',{updateViaCache:'none'});
+      const reg=await navigator.serviceWorker.register('./sw.js?v=5.8.0',{updateViaCache:'none'});
       reg.update().catch(()=>{});
     }catch(e){ console.warn('SW 등록 실패',e); }
     checkForUpdate(false);
