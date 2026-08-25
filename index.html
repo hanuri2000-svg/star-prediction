@@ -294,12 +294,20 @@ header .danger{
   body:not(.force-desktop) .brand-icon{width:26px;height:26px;font-size:14px}
 }
 
+
+/* ===== v5.6 EloBoard player DB ===== */
+.player-db-note{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:8px 0 2px;color:#9aa5c3;font-size:11px}
+.player-db-note b{color:#cbbfff}
+.db-dot{width:7px;height:7px;border-radius:50%;background:#45d6a0;box-shadow:0 0 0 3px rgba(69,214,160,.10)}
+.db-dot.off{background:#7c849d;box-shadow:none}
+input[list]{padding-right:26px}
+
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v5.5</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
+<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v5.6</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
 <button class="btn" onclick="openParticipants()">참가자</button>
 <button class="btn" onclick="quickAddParticipant()">＋ 빠른 참가자</button>
 <button class="btn" onclick="openEventSettings()">대회/팀 설정</button>
@@ -512,6 +520,44 @@ function saveEventSettings(){data.tournament=document.getElementById('tname').va
 
 
 
+
+let eloPlayers=[];
+let eloPlayerMap=new Map();
+let eloDbMeta={count:0,updated_at:null};
+function normalizePlayerName(v){return String(v||'').trim().replace(/\s+/g,' ')}
+function rebuildEloPlayerMap(){
+  eloPlayerMap=new Map();
+  for(const p of eloPlayers){
+    const name=normalizePlayerName(p?.name),race=String(p?.race||'').toUpperCase();
+    if(name&&['P','T','Z'].includes(race))eloPlayerMap.set(name,race);
+  }
+}
+async function loadEloPlayers(){
+  try{
+    const r=await fetch('./players.json?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok)throw new Error('player db fetch failed');
+    const j=await r.json();
+    eloPlayers=Array.isArray(j.players)?j.players:[];
+    eloDbMeta={count:Number(j.count||eloPlayers.length||0),updated_at:j.updated_at||null};
+    rebuildEloPlayerMap();
+  }catch(e){console.warn('EloBoard 선수 DB 로드 실패',e);eloPlayers=[];eloPlayerMap=new Map();eloDbMeta={count:0,updated_at:null}}
+}
+function eloRace(name){return eloPlayerMap.get(normalizePlayerName(name))||''}
+function eloDatalist(){return `<datalist id="eloPlayersList">${eloPlayers.map(p=>`<option value="${esc(p.name)}">${esc(p.race)}</option>`).join('')}</datalist>`}
+function eloDbNote(){
+  const ok=eloDbMeta.count>0;let date='';
+  if(eloDbMeta.updated_at){try{date=new Date(eloDbMeta.updated_at).toLocaleDateString('ko-KR')}catch(e){}}
+  return `<div class="player-db-note"><span class="db-dot ${ok?'':'off'}"></span>${ok?`EloBoard 선수 DB <b>${eloDbMeta.count}명</b>${date?' · '+date:''} · 이름 선택 시 종족 자동 지정`:'선수 DB 불러오기 실패 · 종족은 수동 선택 가능'}</div>`;
+}
+function autoRaceFor(inputId,selectId){
+  const input=document.getElementById(inputId),select=document.getElementById(selectId);if(!input||!select)return;
+  const race=eloRace(input.value);if(race)select.value=race;
+}
+function scheduleNameInput(i,side,el){
+  const key=side===1?'p1':'p2',raceKey=side===1?'race1':'race2';scheduleDraft[i][key]=el.value;
+  const race=eloRace(el.value);if(race){scheduleDraft[i][raceKey]=race;const sel=el.closest('.schedule-row')?.querySelector(side===1?'.race1-select':'.race2-select');if(sel)sel.value=race}
+}
+
 let scheduleDraft=[];
 
 function openSchedule(){
@@ -532,6 +578,8 @@ function openSchedule(){
         ? `<b>${esc(data.teamA||'팀 A')}</b> 선수와 <b>${esc(data.teamB||'팀 B')}</b> 선수 이름만 입력하면 돼.`
         : `왼쪽 선수와 오른쪽 선수 이름만 입력하면 돼.`}
     </div>
+    ${eloDbNote()}
+    ${eloDatalist()}
     <div class="schedule-head">
       <div>경기</div><div>${esc(data.teamA||'왼쪽 선수')}</div><div>종족</div><div>${esc(data.teamB||'오른쪽 선수')}</div><div>종족</div><div>관리</div>
     </div>
@@ -551,9 +599,9 @@ function renderScheduleEditor(){
   box.innerHTML=scheduleDraft.map((r,i)=>`
     <div class="schedule-row">
       <div class="game-no">${i+1}</div>
-      <input class="p1-input" value="${esc(r.p1)}" placeholder="${esc(data.teamA||'왼쪽 선수')}" oninput="scheduleDraft[${i}].p1=this.value">
+      <input class="p1-input" list="eloPlayersList" value="${esc(r.p1)}" placeholder="${esc(data.teamA||'왼쪽 선수')}" oninput="scheduleNameInput(${i},1,this)">
       <select class="race-select race1-select" onchange="scheduleDraft[${i}].race1=this.value">${raceOptions(r.race1||'')}</select>
-      <input class="p2-input" value="${esc(r.p2)}" placeholder="${esc(data.teamB||'오른쪽 선수')}" oninput="scheduleDraft[${i}].p2=this.value">
+      <input class="p2-input" list="eloPlayersList" value="${esc(r.p2)}" placeholder="${esc(data.teamB||'오른쪽 선수')}" oninput="scheduleNameInput(${i},2,this)">
       <select class="race-select race2-select" onchange="scheduleDraft[${i}].race2=this.value">${raceOptions(r.race2||'')}</select>
       <div class="row-actions">
         <button class="mini" onclick="moveScheduleRow(${i},-1)" ${i===0?'disabled':''}>▲</button>
@@ -618,15 +666,17 @@ function openNewMatch(){
   modal(`<h3>경기 추가</h3>
     <div class="grid2">
       <div>
-        <div class="field"><label>왼쪽 선수</label><input id="np1" placeholder="선수명"></div>
+        <div class="field"><label>왼쪽 선수</label><input id="np1" list="eloPlayersList" placeholder="선수명" oninput="autoRaceFor('np1','nr1')"></div>
         <div class="field"><label>종족</label><select id="nr1">${raceOptions('')}</select></div>
       </div>
       <div>
-        <div class="field"><label>오른쪽 선수</label><input id="np2" placeholder="선수명"></div>
+        <div class="field"><label>오른쪽 선수</label><input id="np2" list="eloPlayersList" placeholder="선수명" oninput="autoRaceFor('np2','nr2')"></div>
         <div class="field"><label>종족</label><select id="nr2">${raceOptions('')}</select></div>
       </div>
     </div>
-    <div class="hint">팀전이면 왼쪽=팀 A, 오른쪽=팀 B로 자동 적용돼.</div>
+    ${eloDatalist()}
+    ${eloDbNote()}
+    <div class="hint">팀전이면 왼쪽=팀 A, 오른쪽=팀 B로 자동 적용돼. DB에 없는 선수는 종족을 직접 선택하면 돼.</div>
     <div class="toolbar" style="margin-top:12px">
       <button class="btn primary" onclick="addMatch()">추가</button>
       <button class="btn" onclick="closeModal()">취소</button>
@@ -636,11 +686,15 @@ function openNewMatch(){
 function addMatch(){
   const a=document.getElementById('np1').value.trim();
   const b=document.getElementById('np2').value.trim();
+  const race1=document.getElementById('nr1')?.value||eloRace(a)||'';
+  const race2=document.getElementById('nr2')?.value||eloRace(b)||'';
   if(!a||!b) return alert('두 선수 이름을 입력해줘.');
 
   data.matches.push({
     p1:a,
     p2:b,
+    race1,
+    race2,
     team1:data.teamA?'A':'',
     team2:data.teamB?'B':'',
     picks:{},
@@ -687,9 +741,9 @@ function toggleDesktopMode(){
   applyViewMode();
   window.scrollTo(0,0);
 }
-window.addEventListener('DOMContentLoaded',applyViewMode);
+window.addEventListener('DOMContentLoaded',()=>{applyViewMode();loadEloPlayers();});
 
-const APP_VERSION='5.5.0';
+const APP_VERSION='5.6.0';
 let __updateBusy=false;
 
 async function checkForUpdate(force=false){
@@ -723,7 +777,7 @@ async function checkForUpdate(force=false){
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=5.5.0',{updateViaCache:'none'});
+      const reg=await navigator.serviceWorker.register('./sw.js?v=5.6.0',{updateViaCache:'none'});
       reg.update().catch(()=>{});
     }catch(e){ console.warn('SW 등록 실패',e); }
     checkForUpdate(false);
