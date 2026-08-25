@@ -1,4 +1,4 @@
-name: Apply v5.3 popup layout fix
+name: Apply v5.4 Harina Matchroom style
 
 on:
   push:
@@ -18,91 +18,69 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Patch files
+      - name: Apply v5.4 style
         shell: python
         run: |
           from pathlib import Path
           import json
 
-          p = Path('index.html')
-          html = p.read_text(encoding='utf-8')
-
-          if "APP_VERSION='5.3.0'" not in html:
-              html = html.replace('v5.2</span>', 'v5.3</span>')
-              html = html.replace("const APP_VERSION='5.2.0';", "const APP_VERSION='5.3.0';")
-              html = html.replace('sw.js?v=5.2.0', 'sw.js?v=5.3.0')
-
-              old_modal = "function modal(h){document.getElementById('dialog').innerHTML=h;document.getElementById('modal').classList.add('show')}"
-              new_modal = """function modal(h){
-            const d=document.getElementById('dialog');
-            d.className='dialog';
-            d.innerHTML=h;
-            document.getElementById('modal').classList.add('show');
-          }"""
-              html = html.replace(old_modal, new_modal)
-
-              html = html.replace(
-                  "  renderScheduleEditor();\n}",
-                  "  document.getElementById('dialog').classList.add('schedule-dialog');\n  renderScheduleEditor();\n}",
-                  1
-              )
-
-              css = r'''\n/* ===== v5.3 popup / schedule responsive sizing ===== */
-          .modal{padding:16px;overflow:hidden;width:100vw;height:100dvh}
-          .dialog{width:min(720px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain}
-          .dialog.schedule-dialog{width:min(1180px,calc(100vw - 32px));max-width:min(1180px,calc(100vw - 32px));padding:20px}
-          .schedule-dialog .schedule-editor{width:100%;overflow:visible}
-          .schedule-dialog .schedule-head,.schedule-dialog .schedule-row{width:100%;grid-template-columns:48px minmax(150px,1fr) 116px minmax(150px,1fr) 116px 126px!important}
-          .schedule-dialog .schedule-row input,.schedule-dialog .schedule-row select{min-width:0}
-          .schedule-dialog > .toolbar{position:sticky;bottom:-1px;z-index:3;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding-top:12px;margin-bottom:-4px}
-          body.force-desktop .modal{min-width:0!important;width:100vw!important;left:0!important;right:auto!important}
-          body.force-desktop .dialog{max-width:calc(100vw - 32px)!important}
-          body.force-desktop .dialog.schedule-dialog{width:min(1180px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important}
-          @media(max-width:900px){
-            .dialog{width:calc(100vw - 24px);max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px)}
-            .dialog.schedule-dialog{width:calc(100vw - 24px);max-width:calc(100vw - 24px);padding:16px}
-            .schedule-dialog .schedule-head{display:none}
-            .schedule-dialog .schedule-row{grid-template-columns:42px minmax(0,1fr) 105px!important;gap:7px}
-            .schedule-dialog .p1-input{grid-column:2}.schedule-dialog .race1-select{grid-column:3}
-            .schedule-dialog .p2-input{grid-column:2}.schedule-dialog .race2-select{grid-column:3}
-            .schedule-dialog .row-actions{grid-column:1/-1;justify-content:flex-end}
-          }
-          @media(max-width:560px){
-            .modal{padding:8px;align-items:flex-start}
-            .dialog{width:calc(100vw - 16px);max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);border-radius:16px;padding:14px}
-            .dialog.schedule-dialog{width:calc(100vw - 16px)!important;max-width:calc(100vw - 16px)!important;padding:12px}
-            .schedule-dialog .schedule-row{display:grid!important;grid-template-columns:34px minmax(0,1fr)!important;gap:7px;padding:10px}
-            .schedule-dialog .game-no{grid-column:1;grid-row:1 / span 4;align-self:start;padding-top:10px}
-            .schedule-dialog .p1-input,.schedule-dialog .race1-select,.schedule-dialog .p2-input,.schedule-dialog .race2-select{grid-column:2!important;width:100%}
-            .schedule-dialog .row-actions{grid-column:1/-1!important;justify-content:flex-end;padding-top:2px}
-            .schedule-dialog .race-select{padding:9px 8px}
-            .schedule-dialog > .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-            .schedule-dialog > .toolbar .btn:first-child{grid-column:1/-1}
-          }
+          p=Path('index.html')
+          html=p.read_text(encoding='utf-8')
+          if "APP_VERSION='5.4.0'" not in html:
+              html=html.replace('v5.3</span>','v5.4</span>')
+              html=html.replace("const APP_VERSION='5.3.0';","const APP_VERSION='5.4.0';")
+              html=html.replace('sw.js?v=5.3.0','sw.js?v=5.4.0')
+              css=r'''
+          /* ===== v5.4 HARINA MATCHROOM-inspired dark UI ===== */
+          :root{--bg:#080b14;--panel:#121728;--panel2:#0d1220;--line:#29324d;--text:#f4f6ff;--muted:#929bb8;--accent:#8067ff;--accent2:#d584aa;--good:#45d6a0;--bad:#ff8fa3;--gold:#ffd670;--shadow:0 16px 40px rgba(0,0,0,.28)}
+          html{background:#080b14}
+          body{background:radial-gradient(circle at 18% -12%,rgba(77,58,155,.42) 0,transparent 32%),radial-gradient(circle at 90% 0%,rgba(139,60,112,.25) 0,transparent 28%),var(--bg);color:var(--text)}
+          .wrap{max-width:1500px;padding:18px 22px 34px}
+          header{background:rgba(8,11,20,.9);border-bottom:1px solid rgba(67,76,112,.32);backdrop-filter:blur(16px);margin-bottom:16px;padding:12px 0}
+          .brand h1{color:#fff;text-shadow:0 2px 18px rgba(128,103,255,.2)}.brand .subtitle{color:var(--muted)}
+          .version{color:#b9abff;background:#211b3c;border:1px solid #4d4283;border-radius:999px;padding:3px 7px;margin-left:4px}
+          .btn{color:var(--text);background:#161d30;border-color:#303a59;box-shadow:none;border-radius:9px}.btn:hover{transform:none;filter:brightness(1.12);border-color:#4c5880;box-shadow:none}
+          .primary{background:linear-gradient(135deg,#8067ff,#6750d8);border-color:transparent;color:#fff}.good{color:#a4f1d2;background:#17352d;border-color:#2d6d59}.danger{color:#ff9bac;background:#25121a;border-color:#5a2b3b}.view-toggle{background:#121728}.save-state{color:#85cbb0;background:#10261f;border-color:#285948}
+          .layout{grid-template-columns:minmax(720px,1.5fr) minmax(370px,.68fr);gap:14px}.card{background:linear-gradient(145deg,#151b2e,#101523);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:18px;padding:16px}.card h2{color:#fff}
+          .team{background:#0d1220;border:1px solid #303958}.teamname{color:#dfe3f5}.teamboard .score{color:#d8ceff}.sep{color:#6e7897}
+          .player{background:linear-gradient(145deg,#171d31,#0d1220);border:1px solid #303958;box-shadow:none;color:#fff;padding:16px 10px}.teamtag{color:#8490b0}
+          .status{color:#aab3cf;background:#0d1220;border-color:#29324d}.status b{color:#ffd670}
+          .vote-card,.missing-card{background:#0d1220;border:1px solid #29324d;color:#fff;border-radius:12px}.vote-card.left b{color:#ad9cff}.vote-card.right b{color:#e5a3c2}.vote-card span,.missing-card span{color:#8f99b7}.missing-card.active{background:#281721;border-color:#6d344b}
+          .pred{background:#0d1220;border:1px solid #222b43;border-radius:10px}.name{color:#f5f6ff}.pick{background:#151c2d;border-color:#303a59;color:#eef1ff}.pick.on{background:linear-gradient(135deg,#8067ff,#b26c9a);box-shadow:none;color:#fff}
+          .post-result-bar{background:linear-gradient(120deg,#171938,#251427);border-color:#453963}.post-result-text{color:#d7d0eb}
+          table{color:#eef1ff}th{color:#858fab;border-bottom-color:#2a334f}td{border-bottom-color:#242d45}table tbody tr:hover{background:#141b2d}
+          .hist{border:1px solid transparent;color:#edf0ff}.hist:hover{background:#151c2e;border-color:#29324d}.hist.current{background:linear-gradient(135deg,#222044,#25172d);border-color:#50456f}.small{color:#8993b0}
+          .race-p{background:#253d78;color:#b8cbff;border-color:#3d61b0}.race-t{background:#6d302b;color:#ffc2b9;border-color:#a24e43}.race-z{background:#4f2b70;color:#dfbaff;border-color:#74449b}.race-r{background:#255544;color:#b8f2da;border-color:#3a8067}
+          .dialog{background:linear-gradient(145deg,#151b2e,#101523);border-color:#313a58;box-shadow:0 24px 70px rgba(0,0,0,.55)}.dialog h3{color:#fff}.hint{color:#8d97b3}.field label{color:#939dbc}
+          .field input,.field textarea,.field select,.schedule-row input,.race-select{background:#0c101d!important;color:#f4f6ff!important;border-color:#303a59!important}.field input:focus,.field textarea:focus,.field select:focus,.schedule-row input:focus,.race-select:focus{outline:none;border-color:#8067ff!important;box-shadow:0 0 0 2px rgba(128,103,255,.18)}
+          .schedule-dialog .schedule-head{color:#8f99b7}.schedule-dialog .schedule-row{background:#0d1220;border-color:#29324d}.game-no{color:#d7c9ff}.mini{color:#eef1ff;background:#192138;border-color:#303a59}.mini.danger{background:#25121a;color:#ff9bac;border-color:#5a2b3b}.schedule-dialog>.toolbar{background:rgba(16,21,35,.97);border-top-color:#29324d}.modal{background:rgba(2,4,10,.78)}
+          .credit{color:#5f6986}.credit b{color:#8d96b2}
+          ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-track{background:#0c101d}::-webkit-scrollbar-thumb{background:#3a4568;border-radius:10px}::-webkit-scrollbar-thumb:hover{background:#4c5982}
+          @media(min-width:1101px){.wrap{max-width:1800px;padding:14px 18px 24px}header{margin-bottom:10px}.brand h1{font-size:30px}.subtitle{font-size:11px}.btn{padding:7px 10px;font-size:12px}.layout{gap:10px}.card{padding:11px 12px;border-radius:14px}.card h2{font-size:14px;margin-bottom:8px}.teamboard{margin:5px 0 8px}.team{padding:9px}.teamname{font-size:15px}.score{font-size:23px}.toolbar{gap:5px}.player{font-size:21px;padding:11px 8px}.match{margin:8px 0}.status{padding:7px 9px;margin:6px 0 8px;font-size:11px}.prediction-summary{margin:7px 0}.vote-card,.missing-card{padding:8px}.vote-card b,.missing-card b{font-size:15px}.pred-list{gap:4px}.pred{grid-template-columns:150px 1fr 1fr;padding:5px 6px;min-height:38px}.pick{min-height:34px;padding:6px;font-size:12px}.name{font-size:12px}.resultbar{margin-top:8px}th,td{padding:7px 5px;font-size:12px}.hist{padding:7px 8px;margin-bottom:3px}aside{top:76px;gap:10px;max-height:calc(100vh - 90px)}aside .card:last-child{max-height:46vh}}
+          @media(max-width:700px){body:not(.force-desktop) .card{background:linear-gradient(145deg,#151b2e,#101523);border-color:#29324d}body:not(.force-desktop) header{background:transparent;border-bottom:0}body:not(.force-desktop) .btn{min-height:40px}}
           '''
-              html = html.replace('</style>', css + '\n</style>')
-              p.write_text(html, encoding='utf-8')
+              html=html.replace('</style>',css+'\n</style>')
+              p.write_text(html,encoding='utf-8')
 
-          Path('version.json').write_text(json.dumps({
-              'version':'5.3.0',
-              'updated':'2026-08-25',
-              'notes':'대진표 관리 및 팝업 반응형 크기 개선, 모바일/PC 화면 맞춤'
-          }, ensure_ascii=False, indent=2), encoding='utf-8')
-
-          Path('sw.js').write_text("""const SW_VERSION='5.3.0';
+          manifest=json.loads(Path('manifest.webmanifest').read_text(encoding='utf-8'))
+          manifest['background_color']='#080b14'
+          manifest['theme_color']='#8067ff'
+          Path('manifest.webmanifest').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
+          Path('version.json').write_text(json.dumps({'version':'5.4.0','updated':'2026-08-25','notes':'하리나 매치룸 스타일 다크 퍼플 UI 리뉴얼 및 PC 컴팩트 레이아웃'},ensure_ascii=False,indent=2),encoding='utf-8')
+          Path('sw.js').write_text("""const SW_VERSION='5.4.0';
           self.addEventListener('install',e=>self.skipWaiting());
           self.addEventListener('activate',e=>e.waitUntil((async()=>{const k=await caches.keys();await Promise.all(k.map(x=>caches.delete(x)));await self.clients.claim()})()));
           self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;const u=new URL(r.url);if(u.origin!==location.origin)return;e.respondWith((async()=>{try{return await fetch(r,{cache:'no-store'})}catch(x){return fetch(r)}})())});
-          """, encoding='utf-8')
+          """,encoding='utf-8')
 
       - name: Commit update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html version.json sw.js
+          git add index.html manifest.webmanifest version.json sw.js
           if git diff --cached --quiet; then
             echo "No changes"
             exit 0
           fi
-          git commit -m "Update 맞혀도랑 to v5.3 popup layout"
+          git commit -m "Restyle 맞혀도랑 v5.4"
           git push
