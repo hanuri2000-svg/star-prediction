@@ -23,31 +23,8 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           html=p.read_text(encoding='utf-8')
-
-          old="""function autoRememberedRace(inputId,selectId){
-  const input=document.getElementById(inputId),select=document.getElementById(selectId);if(!input||!select)return;
-  const r=rememberedRace(input.value);if(r)select.value=r;
-}
-function schedulePlayerInput(i,side,el){
-  const key=side===1?'p1':'p2',raceKey=side===1?'race1':'race2';
-  scheduleDraft[i][key]=el.value;
-  const r=rememberedRace(el.value);
-  if(r){scheduleDraft[i][raceKey]=r;const sel=el.closest('.schedule-row')?.querySelector(side===1?'.race1-select':'.race2-select');if(sel)sel.value=r}
-}
-"""
-          new="""function autoRememberedRace(inputId,selectId){
-  const input=document.getElementById(inputId),select=document.getElementById(selectId);if(!input||!select)return;
-  select.value=rememberedRace(input.value)||'';
-}
-function schedulePlayerInput(i,side,el){
-  const key=side===1?'p1':'p2',raceKey=side===1?'race1':'race2';
-  scheduleDraft[i][key]=el.value;
-  const r=rememberedRace(el.value)||'';
-  scheduleDraft[i][raceKey]=r;
-  const sel=el.closest('.schedule-row')?.querySelector(side===1?'.race1-select':'.race2-select');
-  if(sel)sel.value=r;
-}
-"""
+          old="function autoRememberedRace(inputId,selectId){\n  const input=document.getElementById(inputId),select=document.getElementById(selectId);if(!input||!select)return;\n  const r=rememberedRace(input.value);if(r)select.value=r;\n}\nfunction schedulePlayerInput(i,side,el){\n  const key=side===1?'p1':'p2',raceKey=side===1?'race1':'race2';\n  scheduleDraft[i][key]=el.value;\n  const r=rememberedRace(el.value);\n  if(r){scheduleDraft[i][raceKey]=r;const sel=el.closest('.schedule-row')?.querySelector(side===1?'.race1-select':'.race2-select');if(sel)sel.value=r}\n}\n"
+          new="function autoRememberedRace(inputId,selectId){\n  const input=document.getElementById(inputId),select=document.getElementById(selectId);if(!input||!select)return;\n  select.value=rememberedRace(input.value)||'';\n}\nfunction schedulePlayerInput(i,side,el){\n  const key=side===1?'p1':'p2',raceKey=side===1?'race1':'race2';\n  scheduleDraft[i][key]=el.value;\n  const r=rememberedRace(el.value)||'';\n  scheduleDraft[i][raceKey]=r;\n  const sel=el.closest('.schedule-row')?.querySelector(side===1?'.race1-select':'.race2-select');\n  if(sel)sel.value=r;\n}\n"
           if old not in html:
               raise SystemExit('autofill function pattern not found')
           p.write_text(html.replace(old,new,1),encoding='utf-8')
