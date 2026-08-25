@@ -1,0 +1,105 @@
+name: Apply v5.5 header harmony update
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-v55.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch 맞혀도랑 to v5.5
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+
+          p = Path('index.html')
+          html = p.read_text(encoding='utf-8')
+
+          html = html.replace('v5.4</span>', 'v5.5</span>')
+          html = html.replace("const APP_VERSION='5.4.0';", "const APP_VERSION='5.5.0';")
+          html = html.replace('sw.js?v=5.4.0', 'sw.js?v=5.5.0')
+          html = html.replace('<span class="brand-icon">🔮</span>', '<span class="brand-icon">✦</span>')
+
+          if 'v5.5 header harmony tune' not in html:
+              css = r'''
+          /* ===== v5.5 header harmony tune ===== */
+          header{
+            background:linear-gradient(90deg,rgba(11,14,27,.96),rgba(17,24,43,.95) 52%,rgba(35,16,45,.92));
+            border-bottom:1px solid rgba(91,99,147,.34);
+            box-shadow:0 10px 28px rgba(0,0,0,.28);
+          }
+          .brand{
+            display:flex;flex-direction:column;justify-content:center;padding:10px 16px;
+            border:1px solid rgba(92,98,153,.34);border-radius:16px;
+            background:linear-gradient(135deg,rgba(38,31,71,.72),rgba(14,20,35,.88));
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+          }
+          .brand h1{display:flex;align-items:center;gap:10px;color:#fff;text-shadow:none}
+          .brand-icon{
+            display:inline-grid;place-items:center;width:30px;height:30px;border-radius:11px;
+            background:linear-gradient(135deg,#8067ff,#d584aa);color:#fff;font-size:16px;font-weight:900;
+            filter:none;box-shadow:0 8px 18px rgba(128,103,255,.26);
+          }
+          .brand .subtitle{margin-left:40px;color:#a9b2d0}
+          .version{
+            color:#f4f6ff;background:linear-gradient(135deg,#32285d,#5a3d80);
+            border:1px solid rgba(136,118,224,.45);
+          }
+          header .btn:not(.danger):not(.good):not(.primary){
+            background:linear-gradient(180deg,#18223a,#10182b);border:1px solid #34405f;color:#eef1ff;
+          }
+          header .btn:not(.danger):not(.good):not(.primary):hover{
+            background:linear-gradient(180deg,#1d2946,#152039);border-color:#7d68ff;color:#fff;
+          }
+          header .btn.primary{background:linear-gradient(135deg,#8067ff,#6750d8);border-color:transparent}
+          header .save-state{
+            background:linear-gradient(180deg,#132a23,#10211d);border-color:#2d6652;color:#9be1c4;
+          }
+          header .danger{
+            background:linear-gradient(180deg,#2e1620,#221119);border-color:#6b3043;color:#ffb2be;
+          }
+          @media(max-width:700px){
+            body:not(.force-desktop) .brand{padding:9px 12px;border-radius:14px}
+            body:not(.force-desktop) .brand .subtitle{margin-left:34px}
+            body:not(.force-desktop) .brand-icon{width:26px;height:26px;font-size:14px}
+          }
+          '''
+              html = html.replace('</style>', css + '\n</style>')
+
+          p.write_text(html, encoding='utf-8')
+
+          Path('version.json').write_text(json.dumps({
+            'version':'5.5.0',
+            'updated':'2026-08-25',
+            'notes':'헤더 브랜드/메뉴 색 조화 개선'
+          }, ensure_ascii=False, indent=2), encoding='utf-8')
+
+          Path('sw.js').write_text("""const SW_VERSION='5.5.0';
+          self.addEventListener('install',e=>self.skipWaiting());
+          self.addEventListener('activate',e=>e.waitUntil((async()=>{const k=await caches.keys();await Promise.all(k.map(x=>caches.delete(x)));await self.clients.claim()})()));
+          self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;const u=new URL(r.url);if(u.origin!==location.origin)return;e.respondWith((async()=>{try{return await fetch(r,{cache:'no-store'})}catch(x){return fetch(r)}})())});
+          """, encoding='utf-8')
+
+      - name: Commit v5.5
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html version.json sw.js
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Update 맞혀도랑 to v5.5"
+          git push
