@@ -1,0 +1,108 @@
+name: Apply v5.3 popup layout fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-v53.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch files
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+
+          p = Path('index.html')
+          html = p.read_text(encoding='utf-8')
+
+          if "APP_VERSION='5.3.0'" not in html:
+              html = html.replace('v5.2</span>', 'v5.3</span>')
+              html = html.replace("const APP_VERSION='5.2.0';", "const APP_VERSION='5.3.0';")
+              html = html.replace('sw.js?v=5.2.0', 'sw.js?v=5.3.0')
+
+              old_modal = "function modal(h){document.getElementById('dialog').innerHTML=h;document.getElementById('modal').classList.add('show')}"
+              new_modal = """function modal(h){
+            const d=document.getElementById('dialog');
+            d.className='dialog';
+            d.innerHTML=h;
+            document.getElementById('modal').classList.add('show');
+          }"""
+              html = html.replace(old_modal, new_modal)
+
+              html = html.replace(
+                  "  renderScheduleEditor();\n}",
+                  "  document.getElementById('dialog').classList.add('schedule-dialog');\n  renderScheduleEditor();\n}",
+                  1
+              )
+
+              css = r'''\n/* ===== v5.3 popup / schedule responsive sizing ===== */
+          .modal{padding:16px;overflow:hidden;width:100vw;height:100dvh}
+          .dialog{width:min(720px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain}
+          .dialog.schedule-dialog{width:min(1180px,calc(100vw - 32px));max-width:min(1180px,calc(100vw - 32px));padding:20px}
+          .schedule-dialog .schedule-editor{width:100%;overflow:visible}
+          .schedule-dialog .schedule-head,.schedule-dialog .schedule-row{width:100%;grid-template-columns:48px minmax(150px,1fr) 116px minmax(150px,1fr) 116px 126px!important}
+          .schedule-dialog .schedule-row input,.schedule-dialog .schedule-row select{min-width:0}
+          .schedule-dialog > .toolbar{position:sticky;bottom:-1px;z-index:3;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding-top:12px;margin-bottom:-4px}
+          body.force-desktop .modal{min-width:0!important;width:100vw!important;left:0!important;right:auto!important}
+          body.force-desktop .dialog{max-width:calc(100vw - 32px)!important}
+          body.force-desktop .dialog.schedule-dialog{width:min(1180px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important}
+          @media(max-width:900px){
+            .dialog{width:calc(100vw - 24px);max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px)}
+            .dialog.schedule-dialog{width:calc(100vw - 24px);max-width:calc(100vw - 24px);padding:16px}
+            .schedule-dialog .schedule-head{display:none}
+            .schedule-dialog .schedule-row{grid-template-columns:42px minmax(0,1fr) 105px!important;gap:7px}
+            .schedule-dialog .p1-input{grid-column:2}.schedule-dialog .race1-select{grid-column:3}
+            .schedule-dialog .p2-input{grid-column:2}.schedule-dialog .race2-select{grid-column:3}
+            .schedule-dialog .row-actions{grid-column:1/-1;justify-content:flex-end}
+          }
+          @media(max-width:560px){
+            .modal{padding:8px;align-items:flex-start}
+            .dialog{width:calc(100vw - 16px);max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);border-radius:16px;padding:14px}
+            .dialog.schedule-dialog{width:calc(100vw - 16px)!important;max-width:calc(100vw - 16px)!important;padding:12px}
+            .schedule-dialog .schedule-row{display:grid!important;grid-template-columns:34px minmax(0,1fr)!important;gap:7px;padding:10px}
+            .schedule-dialog .game-no{grid-column:1;grid-row:1 / span 4;align-self:start;padding-top:10px}
+            .schedule-dialog .p1-input,.schedule-dialog .race1-select,.schedule-dialog .p2-input,.schedule-dialog .race2-select{grid-column:2!important;width:100%}
+            .schedule-dialog .row-actions{grid-column:1/-1!important;justify-content:flex-end;padding-top:2px}
+            .schedule-dialog .race-select{padding:9px 8px}
+            .schedule-dialog > .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+            .schedule-dialog > .toolbar .btn:first-child{grid-column:1/-1}
+          }
+          '''
+              html = html.replace('</style>', css + '\n</style>')
+              p.write_text(html, encoding='utf-8')
+
+          Path('version.json').write_text(json.dumps({
+              'version':'5.3.0',
+              'updated':'2026-08-25',
+              'notes':'대진표 관리 및 팝업 반응형 크기 개선, 모바일/PC 화면 맞춤'
+          }, ensure_ascii=False, indent=2), encoding='utf-8')
+
+          Path('sw.js').write_text("""const SW_VERSION='5.3.0';
+          self.addEventListener('install',e=>self.skipWaiting());
+          self.addEventListener('activate',e=>e.waitUntil((async()=>{const k=await caches.keys();await Promise.all(k.map(x=>caches.delete(x)));await self.clients.claim()})()));
+          self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;const u=new URL(r.url);if(u.origin!==location.origin)return;e.respondWith((async()=>{try{return await fetch(r,{cache:'no-store'})}catch(x){return fetch(r)}})())});
+          """, encoding='utf-8')
+
+      - name: Commit update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html version.json sw.js
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Update 맞혀도랑 to v5.3 popup layout"
+          git push
