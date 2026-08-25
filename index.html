@@ -157,19 +157,53 @@ body.force-desktop header{position:sticky!important}
  .schedule-row .row-actions{grid-column:1/-1}
 }
 
+
+.save-state{
+ font-size:11px;color:#6d9c88;background:#edf8f3;border:1px solid #d2eade;
+ border-radius:999px;padding:7px 10px;white-space:nowrap
+}
+.prediction-summary{
+ display:grid;grid-template-columns:1fr 112px 1fr;gap:10px;align-items:stretch;margin:12px 0 10px
+}
+.vote-card,.missing-card{
+ border:1px solid var(--line);background:#fbf9fd;border-radius:14px;padding:12px;
+ text-align:center;color:var(--text)
+}
+.vote-card b,.missing-card b{display:block;font-size:19px}
+.vote-card span,.missing-card span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.vote-card.left b{color:#7860bc}.vote-card.right b{color:#b86f99}
+.missing-card{cursor:pointer;font-weight:800}
+.missing-card.active{background:#fff1f4;border-color:#efcbd4}
+.pred.hidden-by-filter{display:none}
+.post-result-bar{
+ margin-top:12px;padding:12px 13px;border:1px solid #e6dcec;border-radius:14px;
+ background:linear-gradient(135deg,#faf6fd,#fff8fb);
+ display:flex;justify-content:space-between;align-items:center;gap:12px
+}
+.post-result-text{font-size:13px;color:#665a72;font-weight:800}
+.rank-change{font-size:11px;font-weight:900;white-space:nowrap}
+.rank-up{color:#4b9a78}.rank-down{color:#bf6679}.rank-same{color:#aaa0b2}
+@media(max-width:700px){
+ body:not(.force-desktop) .prediction-summary{grid-template-columns:1fr 90px 1fr;gap:6px}
+ body:not(.force-desktop) .vote-card,body:not(.force-desktop) .missing-card{padding:9px 6px}
+ body:not(.force-desktop) .vote-card b,body:not(.force-desktop) .missing-card b{font-size:16px}
+}
+
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-<div class="brand"><h1><span class="brand-icon">🔮</span> 맞혀도랑 <span class="version">v5.1</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
+<div class="brand"><h1><span class="brand-icon">🔮</span> 맞혀도랑 <span class="version">v5.2</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
 <button class="btn" onclick="openParticipants()">참가자</button>
+<button class="btn" onclick="quickAddParticipant()">＋ 빠른 참가자</button>
 <button class="btn" onclick="openEventSettings()">대회/팀 설정</button>
 <button class="btn" onclick="openSchedule()">대진표 관리</button>
 <button class="btn view-toggle" id="viewToggle" onclick="toggleDesktopMode()">🖥 PC 화면</button>
 <button class="btn" onclick="exportData()">백업</button>
 <button class="btn" onclick="checkForUpdate(true)">업데이트 확인</button>
 <label class="btn">복원<input id="restoreFile" type="file" accept="application/json" hidden onchange="restoreData(event)"></label>
+<span id="saveState" class="save-state">✓ 자동 저장됨</span>
 <button class="btn danger" onclick="resetTournament()">대회 초기화</button>
 </header>
 
@@ -193,7 +227,12 @@ body.force-desktop header{position:sticky!important}
 <div class="match">
 <div class="player" id="p1">선수 A</div><div class="vs">VS</div><div class="player" id="p2">선수 B</div>
 </div>
-<div class="status" id="status"></div>
+<div class="prediction-summary" id="predictionSummary">
+      <div class="vote-card left"><b id="voteP1">0명 · 0%</b><span id="voteP1Name">선수 A</span></div>
+      <button class="missing-card" id="missingBtn" onclick="toggleMissingOnly()"><b id="missingCount">0명</b><span>미예측</span></button>
+      <div class="vote-card right"><b id="voteP2">0명 · 0%</b><span id="voteP2Name">선수 B</span></div>
+    </div>
+    <div class="status" id="status"></div>
 <div class="pred-list" id="predList"></div>
 
 <div class="resultbar">
@@ -202,11 +241,15 @@ body.force-desktop header{position:sticky!important}
 <button class="btn" onclick="clearWinner()">결과 취소</button>
 <button class="btn danger" onclick="deleteCurrentMatch()">경기 삭제</button>
 </div>
+<div id="postResultBar" class="post-result-bar" style="display:none">
+  <div class="post-result-text" id="postResultText"></div>
+  <button class="btn primary" onclick="nextMatch()">다음 경기 ▶</button>
+</div>
 </section>
 
 <aside>
 <section class="card"><h2>🏆 현재 순위</h2>
-<table><thead><tr><th>순위</th><th>참가자</th><th>적중</th><th>오답</th><th>적중률</th></tr></thead><tbody id="rankBody"></tbody></table>
+<table><thead><tr><th>순위</th><th>참가자</th><th>등락</th><th>적중</th><th>오답</th><th>적중률</th></tr></thead><tbody id="rankBody"></tbody></table>
 </section>
 <section class="card" style="margin-top:14px"><h2>📋 전체 대진</h2><div id="history"></div></section>
 </aside>
@@ -220,8 +263,16 @@ body.force-desktop header{position:sticky!important}
 const KEY='starPredictionManager_v31';
 function blank(){return {tournament:'새 대회',teamA:'',teamB:'',participants:[],matches:[],current:-1,version:31}}
 let data=load();
+let missingOnly=false;
+let previousRanks={};
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||blank()}catch(e){return blank()}}
-function save(){localStorage.setItem(KEY,JSON.stringify(data));render()}
+function save(){
+  localStorage.setItem(KEY,JSON.stringify(data));
+  const s=document.getElementById('saveState');
+  if(s){s.textContent='저장 중…';s.style.opacity='.65'}
+  render();
+  setTimeout(()=>{const x=document.getElementById('saveState');if(x){x.textContent='✓ 자동 저장됨';x.style.opacity='1'}},220);
+}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function current(){return data.matches[data.current]||null}
 function teamLabel(c){return c==='A'?data.teamA:c==='B'?data.teamB:''}
@@ -254,10 +305,31 @@ function render(){
  document.getElementById('win1').textContent=(m?m.p1:'선수 A')+' 승';
  document.getElementById('win2').textContent=(m?m.p2:'선수 B')+' 승';
  document.getElementById('lockBtn').textContent=m&&m.locked?'🔓 예측 다시 열기':'🔒 예측 마감';
+ 
+ const picks=m?.picks||{};
+ let c1=0,c2=0;
+ data.participants.forEach(n=>{if(picks[n]===1)c1++;else if(picks[n]===2)c2++;});
+ const voted=c1+c2;
+ const p1pct=voted?Math.round(c1/voted*100):0;
+ const p2pct=voted?Math.round(c2/voted*100):0;
+ document.getElementById('voteP1').textContent=`${c1}명 · ${p1pct}%`;
+ document.getElementById('voteP2').textContent=`${c2}명 · ${p2pct}%`;
+ document.getElementById('voteP1Name').textContent=m?m.p1:'선수 A';
+ document.getElementById('voteP2Name').textContent=m?m.p2:'선수 B';
+ const miss=Math.max(0,data.participants.length-voted);
+ document.getElementById('missingCount').textContent=`${miss}명`;
+ document.getElementById('missingBtn').classList.toggle('active',missingOnly);
+ const prb=document.getElementById('postResultBar');
+ if(prb){
+   prb.style.display=m&&m.winner?'flex':'none';
+   const txt=document.getElementById('postResultText');
+   if(txt&&m?.winner) txt.textContent=`${m.winner===1?m.p1:m.p2} 승 · 순위 갱신 완료`;
+ }
+
  document.getElementById('status').innerHTML=m?`${data.current+1}경기 · 예측 ${Object.keys(m.picks||{}).length}/${data.participants.length}명 · <b>${m.locked?'마감':'진행중'}</b>${m.winner?` · 결과 <b>${esc(m.winner===1?m.p1:m.p2)} 승</b>`:''}`:'새 경기를 등록해줘.';
  const pl=document.getElementById('predList');pl.innerHTML='';
  data.participants.forEach(n=>{
-   let p=m?.picks?.[n],d=document.createElement('div');d.className='pred';
+   let p=m?.picks?.[n],d=document.createElement('div');d.className='pred'; if(missingOnly && p) d.classList.add('hidden-by-filter');
    d.innerHTML=`<div class="name">${esc(n)}</div>
    <button class="pick ${p===1?'on':''}" ${!m||m.locked||m.winner?'disabled':''} onclick="pick('${encodeURIComponent(n)}',1)">${esc(m?.p1||'A')}</button>
    <button class="pick ${p===2?'on':''}" ${!m||m.locked||m.winner?'disabled':''} onclick="pick('${encodeURIComponent(n)}',2)">${esc(m?.p2||'B')}</button>`;
@@ -266,11 +338,31 @@ function render(){
  renderRanks();renderHistory()
 }
 function stats(n){let h=0,m=0;data.matches.forEach(x=>{if(x.winner&&x.picks?.[n])x.picks[n]===x.winner?h++:m++});return{h,m,t:h+m,r:h+m?h/(h+m):0}}
-function renderRanks(){let a=data.participants.map(n=>({n,...stats(n)})).sort((x,y)=>y.h-x.h||y.r-x.r||x.n.localeCompare(y.n,'ko'));document.getElementById('rankBody').innerHTML=a.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.n)}</td><td>${x.h}</td><td>${x.m}</td><td>${x.t?(x.r*100).toFixed(1):'0'}%</td></tr>`).join('')}
-function renderHistory(){document.getElementById('history').innerHTML=[...data.matches].reverse().map((m,ri)=>{let i=data.matches.length-ri-1,w=m.winner?(m.winner===1?m.p1:m.p2)+' 승':'결과 대기';return`<div class="hist ${i===data.current?'current':''}" onclick="data.current=${i};save()"><b>${i+1}경기 ${esc(m.p1)} ${raceBadge(m.race1||'')} vs ${esc(m.p2)} ${raceBadge(m.race2||'')}</b><div class="small">${esc(teamLabel(m.team1)||'-')} / ${esc(teamLabel(m.team2)||'-')} · ${esc(w)}</div></div>`}).join('')||'<div class="small">아직 경기 기록이 없어.</div>'}
+function renderRanks(){
+ let arr=data.participants.map(n=>({n,...stats(n)}))
+   .sort((a,b)=>b.h-a.h||b.r-a.r||a.n.localeCompare(b.n,'ko'));
+ const newRanks={};
+ arr.forEach((x,i)=>newRanks[x.n]=i+1);
+ document.getElementById('rankBody').innerHTML=arr.map((x,i)=>{
+   const rank=i+1;
+   const prev=previousRanks[x.n];
+   let change='<span class="rank-change rank-same">―</span>';
+   if(prev && prev>rank) change=`<span class="rank-change rank-up">▲${prev-rank}</span>`;
+   else if(prev && prev<rank) change=`<span class="rank-change rank-down">▼${rank-prev}</span>`;
+   return `<tr><td>${rank}</td><td>${esc(x.n)}</td><td>${change}</td><td>${x.h}</td><td>${x.m}</td><td>${x.t?(x.r*100).toFixed(1):'0'}%</td></tr>`;
+ }).join('');
+ previousRanks=newRanks;
+}
+function renderHistory(){document.getElementById('history').innerHTML=[...data.matches].reverse().map((m,ri)=>{let i=data.matches.length-ri-1,w=m.winner?(m.winner===1?m.p1:m.p2)+' 승':'결과 대기';let vc1=0,vc2=0;Object.values(m.picks||{}).forEach(v=>{if(v===1)vc1++;else if(v===2)vc2++;});return`<div class="hist ${i===data.current?'current':''}" onclick="data.current=${i};save()"><b>${i+1}경기 ${esc(m.p1)} ${raceBadge(m.race1||'')} vs ${esc(m.p2)} ${raceBadge(m.race2||'')}</b><div class="small">${esc(teamLabel(m.team1)||'-')} / ${esc(teamLabel(m.team2)||'-')} · ${vc1}:${vc2} · ${esc(w)}</div></div>`}).join('')||'<div class="small">아직 경기 기록이 없어.</div>'}
 function pick(n,v){let m=current();if(!m||m.locked||m.winner)return;m.picks[decodeURIComponent(n)]=v;save()}
 function toggleLock(){let m=current();if(m){m.locked=!m.locked;save()}}
-function setWinner(v){let m=current();if(!m)return;if(!m.locked&&!confirm('예측을 마감하고 결과 입력할까?'))return;m.locked=true;m.winner=v;save()}
+function setWinner(v){
+  let m=current();if(!m)return;
+  const winner=v===1?m.p1:m.p2;
+  if(!m.locked && !confirm('예측을 마감하고 결과 입력할까?')) return;
+  if(!confirm(`${winner} 승리로 확정할까?\n순위가 다시 계산돼.`)) return;
+  m.locked=true;m.winner=v;save();
+}
 function clearWinner(){let m=current();if(m){m.winner=null;save()}}
 function duplicateMatch(){let m=current();if(!m)return;data.matches.push({p1:m.p1,p2:m.p2,race1:m.race1||'',race2:m.race2||'',team1:m.team1||'',team2:m.team2||'',picks:{},locked:false,winner:null});data.current=data.matches.length-1;save()}
 function deleteCurrentMatch(){if(data.current<0||!confirm('현재 경기를 삭제할까?'))return;data.matches.splice(data.current,1);data.current=Math.min(data.current,data.matches.length-1);save()}
@@ -278,6 +370,29 @@ function resetTournament(){if(!confirm('경기/예측/순위를 초기화할까?
 function modal(h){document.getElementById('dialog').innerHTML=h;document.getElementById('modal').classList.add('show')}
 function closeModal(){document.getElementById('modal').classList.remove('show')}
 document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')closeModal()}
+
+
+function toggleMissingOnly(){
+  missingOnly=!missingOnly;
+  render();
+}
+function quickAddParticipant(){
+  modal(`<h3>빠른 참가자 추가</h3>
+    <div class="field"><label>참가자 이름</label><input id="quickParticipantName" placeholder="닉네임" autofocus></div>
+    <div class="hint">추가 즉시 현재 경기부터 예측 가능해.</div>
+    <div class="toolbar" style="margin-top:12px">
+      <button class="btn primary" onclick="saveQuickParticipant()">추가</button>
+      <button class="btn" onclick="closeModal()">취소</button>
+    </div>`);
+}
+function saveQuickParticipant(){
+  const name=document.getElementById('quickParticipantName')?.value.trim();
+  if(!name) return alert('이름을 입력해줘.');
+  if(data.participants.includes(name)) return alert('이미 있는 참가자야.');
+  data.participants.push(name);
+  closeModal();
+  save();
+}
 
 function openParticipants(){modal(`<h3>참가자 관리</h3><div class="field"><label>한 줄에 한 명씩</label><textarea id="plist">${esc(data.participants.join('\n'))}</textarea></div><div class="toolbar"><button class="btn primary" onclick="saveParticipants()">저장</button><button class="btn" onclick="closeModal()">취소</button></div>`)}
 function saveParticipants(){data.participants=[...new Set(document.getElementById('plist').value.split(/\n/).map(x=>x.trim()).filter(Boolean))];closeModal();save()}
@@ -463,7 +578,7 @@ function toggleDesktopMode(){
 }
 window.addEventListener('DOMContentLoaded',applyViewMode);
 
-const APP_VERSION='5.1.0';
+const APP_VERSION='5.2.0';
 let __updateBusy=false;
 
 async function checkForUpdate(force=false){
@@ -497,7 +612,7 @@ async function checkForUpdate(force=false){
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=5.1.0',{updateViaCache:'none'});
+      const reg=await navigator.serviceWorker.register('./sw.js?v=5.2.0',{updateViaCache:'none'});
       reg.update().catch(()=>{});
     }catch(e){ console.warn('SW 등록 실패',e); }
     checkForUpdate(false);
@@ -509,6 +624,17 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible') checkForUpdate(false);
 });
 setInterval(()=>checkForUpdate(false),60000);
+
+
+document.addEventListener('keydown',e=>{
+  const tag=(e.target?.tagName||'').toLowerCase();
+  if(['input','textarea','select'].includes(tag)) return;
+  if(e.key==='ArrowRight'){e.preventDefault();nextMatch();}
+  else if(e.key==='ArrowLeft'){e.preventDefault();prevMatch();}
+  else if(e.code==='Space'){e.preventDefault();toggleLock();}
+  else if(e.key==='1'){e.preventDefault();const m=current();if(m&&m.locked)setWinner(1);}
+  else if(e.key==='2'){e.preventDefault();const m=current();if(m&&m.locked)setWinner(2);}
+});
 
 render();
 </script>
