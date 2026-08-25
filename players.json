@@ -1,0 +1,12 @@
+{
+  "source": "EloBoard",
+  "source_url": "https://eloboard.com/",
+  "updated_at": null,
+  "count": 0,
+  "players": [],
+  "conflicts": [],
+  "sync": {
+    "frequency": "daily",
+    "request_delay_seconds": 0.8
+  }
+}
