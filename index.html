@@ -251,12 +251,55 @@ table{color:#eef1ff}th{color:#858fab;border-bottom-color:#2a334f}td{border-botto
 @media(min-width:1101px){.wrap{max-width:1800px;padding:14px 18px 24px}header{margin-bottom:10px}.brand h1{font-size:30px}.subtitle{font-size:11px}.btn{padding:7px 10px;font-size:12px}.layout{gap:10px}.card{padding:11px 12px;border-radius:14px}.card h2{font-size:14px;margin-bottom:8px}.teamboard{margin:5px 0 8px}.team{padding:9px}.teamname{font-size:15px}.score{font-size:23px}.toolbar{gap:5px}.player{font-size:21px;padding:11px 8px}.match{margin:8px 0}.status{padding:7px 9px;margin:6px 0 8px;font-size:11px}.prediction-summary{margin:7px 0}.vote-card,.missing-card{padding:8px}.vote-card b,.missing-card b{font-size:15px}.pred-list{gap:4px}.pred{grid-template-columns:150px 1fr 1fr;padding:5px 6px;min-height:38px}.pick{min-height:34px;padding:6px;font-size:12px}.name{font-size:12px}.resultbar{margin-top:8px}th,td{padding:7px 5px;font-size:12px}.hist{padding:7px 8px;margin-bottom:3px}aside{top:76px;gap:10px;max-height:calc(100vh - 90px)}aside .card:last-child{max-height:46vh}}
 @media(max-width:700px){body:not(.force-desktop) .card{background:linear-gradient(145deg,#151b2e,#101523);border-color:#29324d}body:not(.force-desktop) header{background:transparent;border-bottom:0}body:not(.force-desktop) .btn{min-height:40px}}
 
+
+/* ===== v5.5 header harmony tune ===== */
+header{
+  background:linear-gradient(90deg,rgba(11,14,27,.96),rgba(17,24,43,.95) 52%,rgba(35,16,45,.92));
+  border-bottom:1px solid rgba(91,99,147,.34);
+  box-shadow:0 10px 28px rgba(0,0,0,.28);
+}
+.brand{
+  display:flex;flex-direction:column;justify-content:center;padding:10px 16px;
+  border:1px solid rgba(92,98,153,.34);border-radius:16px;
+  background:linear-gradient(135deg,rgba(38,31,71,.72),rgba(14,20,35,.88));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+.brand h1{display:flex;align-items:center;gap:10px;color:#fff;text-shadow:none}
+.brand-icon{
+  display:inline-grid;place-items:center;width:30px;height:30px;border-radius:11px;
+  background:linear-gradient(135deg,#8067ff,#d584aa);color:#fff;font-size:16px;font-weight:900;
+  filter:none;box-shadow:0 8px 18px rgba(128,103,255,.26);
+}
+.brand .subtitle{margin-left:40px;color:#a9b2d0}
+.version{
+  color:#f4f6ff;background:linear-gradient(135deg,#32285d,#5a3d80);
+  border:1px solid rgba(136,118,224,.45);
+}
+header .btn:not(.danger):not(.good):not(.primary){
+  background:linear-gradient(180deg,#18223a,#10182b);border:1px solid #34405f;color:#eef1ff;
+}
+header .btn:not(.danger):not(.good):not(.primary):hover{
+  background:linear-gradient(180deg,#1d2946,#152039);border-color:#7d68ff;color:#fff;
+}
+header .btn.primary{background:linear-gradient(135deg,#8067ff,#6750d8);border-color:transparent}
+header .save-state{
+  background:linear-gradient(180deg,#132a23,#10211d);border-color:#2d6652;color:#9be1c4;
+}
+header .danger{
+  background:linear-gradient(180deg,#2e1620,#221119);border-color:#6b3043;color:#ffb2be;
+}
+@media(max-width:700px){
+  body:not(.force-desktop) .brand{padding:9px 12px;border-radius:14px}
+  body:not(.force-desktop) .brand .subtitle{margin-left:34px}
+  body:not(.force-desktop) .brand-icon{width:26px;height:26px;font-size:14px}
+}
+
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-<div class="brand"><h1><span class="brand-icon">🔮</span> 맞혀도랑 <span class="version">v5.4</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
+<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v5.5</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
 <button class="btn" onclick="openParticipants()">참가자</button>
 <button class="btn" onclick="quickAddParticipant()">＋ 빠른 참가자</button>
 <button class="btn" onclick="openEventSettings()">대회/팀 설정</button>
@@ -646,7 +689,7 @@ function toggleDesktopMode(){
 }
 window.addEventListener('DOMContentLoaded',applyViewMode);
 
-const APP_VERSION='5.4.0';
+const APP_VERSION='5.5.0';
 let __updateBusy=false;
 
 async function checkForUpdate(force=false){
@@ -680,7 +723,7 @@ async function checkForUpdate(force=false){
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=5.4.0',{updateViaCache:'none'});
+      const reg=await navigator.serviceWorker.register('./sw.js?v=5.5.0',{updateViaCache:'none'});
       reg.update().catch(()=>{});
     }catch(e){ console.warn('SW 등록 실패',e); }
     checkForUpdate(false);
