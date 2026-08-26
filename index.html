@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="승자예측">
 <link rel="manifest" href="./manifest.webmanifest">
+<link rel="stylesheet" href="./pastel-theme.css?v=6.0.0">
 <title>맞혀도랑</title>
 <style>
 :root{--bg:#0a0f1e;--panel:#141b2d;--panel2:#1b2540;--line:#2a3657;--text:#f6f8ff;--muted:#9da9c4;--accent:#7788ff;--good:#30d07b;--bad:#ff6577;--gold:#ffd166}
@@ -301,7 +302,7 @@ header .danger{
 <body>
 <div class="wrap">
 <header>
-<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v5.9</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
+<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v6.0</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
 <button class="btn" onclick="openParticipants()">참가자</button>
 <button class="btn" onclick="quickAddParticipant()">＋ 빠른 참가자</button>
 <button class="btn" onclick="openEventSettings()">대회/팀 설정</button>
@@ -731,7 +732,7 @@ function toggleDesktopMode(){
 }
 window.addEventListener('DOMContentLoaded',applyViewMode);
 
-const APP_VERSION='5.9.0';
+const APP_VERSION='6.0.0';
 let __updateBusy=false;
 
 async function checkForUpdate(force=false){
@@ -765,7 +766,7 @@ async function checkForUpdate(force=false){
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=5.9.0',{updateViaCache:'none'});
+      const reg=await navigator.serviceWorker.register('./sw.js?v=6.0.0',{updateViaCache:'none'});
       reg.update().catch(()=>{});
     }catch(e){ console.warn('SW 등록 실패',e); }
     checkForUpdate(false);
