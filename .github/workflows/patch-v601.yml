@@ -1,0 +1,44 @@
+name: Fix v6.0.1 pastel theme order
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/patch-v601.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Move theme override after inline CSS
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+          p=Path('index.html')
+          html=p.read_text(encoding='utf-8')
+          old='<link rel="stylesheet" href="./pastel-theme.css?v=6.0.0">\n'
+          html=html.replace(old,'')
+          if 'pastel-theme.css?v=6.0.1' not in html:
+              html=html.replace('</style>','</style>\n<link rel="stylesheet" href="./pastel-theme.css?v=6.0.1">',1)
+          html=html.replace('v6.0</span>','v6.0.1</span>',1)
+          html=html.replace("const APP_VERSION='6.0.0';","const APP_VERSION='6.0.1';",1)
+          html=html.replace('sw.js?v=6.0.0','sw.js?v=6.0.1',1)
+          p.write_text(html,encoding='utf-8')
+          Path('version.json').write_text(json.dumps({
+            'version':'6.0.1',
+            'updated':'2026-08-26',
+            'notes':'화이트 파스텔 카드형 + 고양이 포인트 테마 · 전체 화면 오버라이드 순서 보정'
+          },ensure_ascii=False,indent=2),encoding='utf-8')
+          sw=Path('sw.js').read_text(encoding='utf-8').replace("SW_VERSION='6.0.0'","SW_VERSION='6.0.1'")
+          Path('sw.js').write_text(sw,encoding='utf-8')
+      - name: Commit v6.0.1
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html version.json sw.js
+          git commit -m "Fix pastel theme override order v6.0.1" || exit 0
+          git push
