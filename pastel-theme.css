@@ -1,0 +1,201 @@
+/* 맞혀도랑 v6.0 - 화이트 파스텔 카드형 + 고양이 포인트 */
+:root{
+  --bg:#fff9fc !important;
+  --panel:#ffffff !important;
+  --panel2:#fffafd !important;
+  --line:#eadfea !important;
+  --text:#51485f !important;
+  --muted:#958aa2 !important;
+  --accent:#b59aff !important;
+  --accent2:#ffb5cf !important;
+  --good:#79cfae !important;
+  --bad:#ff8da3 !important;
+  --gold:#e5ba57 !important;
+  --shadow:0 14px 34px rgba(178,151,204,.10) !important;
+}
+
+html{background:#fff9fc !important}
+body{
+  background:
+    radial-gradient(circle at 4% 0%,rgba(255,221,238,.70) 0,transparent 25%),
+    radial-gradient(circle at 96% 3%,rgba(222,240,255,.80) 0,transparent 24%),
+    linear-gradient(180deg,#fffafd 0%,#f9fbff 100%) !important;
+  color:var(--text) !important;
+}
+
+.wrap{max-width:1800px !important;padding:16px 20px 30px !important}
+
+header{
+  position:sticky !important;top:0 !important;z-index:12 !important;
+  margin-bottom:14px !important;padding:12px 0 14px !important;
+  background:rgba(255,250,253,.88) !important;
+  border-bottom:1px solid rgba(222,205,229,.72) !important;
+  box-shadow:none !important;
+  backdrop-filter:blur(16px) !important;
+}
+
+.brand{
+  position:relative !important;
+  margin-right:auto !important;min-width:250px !important;
+  padding:10px 16px !important;
+  border:1.5px solid #e5d8eb !important;
+  border-radius:18px !important;
+  background:linear-gradient(135deg,#ffffff 0%,#fff7fb 58%,#f8f5ff 100%) !important;
+  box-shadow:0 10px 24px rgba(183,153,206,.10) !important;
+}
+.brand::after{
+  content:'🐾';position:absolute;right:12px;bottom:7px;
+  font-size:12px;opacity:.14;pointer-events:none;
+}
+.brand h1{color:#6b5e7f !important;text-shadow:none !important;font-weight:950 !important}
+.brand .subtitle{color:#a095ad !important}
+.brand-icon{
+  background:linear-gradient(145deg,#c5b0ff,#ffb6d2) !important;
+  color:#fff !important;border:2px solid #fff !important;
+  box-shadow:0 6px 16px rgba(184,151,219,.24) !important;
+}
+.version{
+  color:#77658f !important;
+  background:linear-gradient(135deg,#f1eaff,#fff0f6) !important;
+  border:1px solid #d9c7ea !important;
+}
+
+.btn{
+  background:#fff !important;color:#695d7a !important;
+  border:1.5px solid #e3d8e8 !important;border-radius:13px !important;
+  box-shadow:0 5px 14px rgba(180,150,207,.08) !important;
+  transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease !important;
+}
+.btn:hover{transform:translateY(-1px) !important;filter:none !important;border-color:#cdb9df !important;box-shadow:0 8px 18px rgba(180,150,207,.13) !important}
+.btn.primary{background:linear-gradient(135deg,#b79cff,#f0a9ca) !important;color:#fff !important;border-color:transparent !important}
+.btn.good{background:linear-gradient(135deg,#effaf5,#e3f7ee) !important;color:#4b8f74 !important;border-color:#c9eadc !important}
+.btn.danger{background:linear-gradient(135deg,#fff4f7,#ffe6ed) !important;color:#c26178 !important;border-color:#f5c8d5 !important}
+.save-state{background:#eff9f4 !important;border-color:#cce8db !important;color:#5f9a82 !important}
+
+.layout{gap:14px !important}
+.card{
+  position:relative !important;
+  background:rgba(255,255,255,.96) !important;
+  border:1.5px solid #e8ddeb !important;
+  border-radius:20px !important;
+  box-shadow:0 14px 32px rgba(181,151,207,.09),0 4px 12px rgba(127,200,255,.04) !important;
+  color:var(--text) !important;
+}
+.card::after{
+  content:'🐾';position:absolute;right:14px;top:12px;
+  font-size:11px;opacity:.08;pointer-events:none;
+}
+.card h2{color:#74668a !important;font-weight:900 !important}
+
+.team{
+  background:linear-gradient(180deg,#fff 0%,#fff8fc 100%) !important;
+  border:1.5px solid #eadfeb !important;
+  border-radius:16px !important;
+  box-shadow:0 8px 18px rgba(176,154,196,.07) !important;
+}
+.teamname{color:#746981 !important}.teamboard .score{color:#9c7de2 !important}.sep{color:#b4a9bc !important}
+
+.player{
+  background:linear-gradient(180deg,#fff 0%,#fff9fc 100%) !important;
+  border:1.5px solid #e7dbea !important;
+  color:#5b5068 !important;
+  border-radius:18px !important;
+  box-shadow:0 8px 18px rgba(184,158,206,.08) !important;
+}
+.teamtag{color:#9a8fa4 !important}
+
+.status{
+  background:#fffafd !important;border:1.5px solid #eadfeb !important;
+  color:#91869b !important;border-radius:14px !important;
+}
+.status b{color:#b28a2d !important}
+
+.prediction-summary{gap:9px !important}
+.vote-card,.missing-card{
+  background:#fff !important;border:1.5px solid #e8ddeb !important;
+  color:#5e536a !important;border-radius:16px !important;
+  box-shadow:0 7px 16px rgba(180,152,205,.06) !important;
+}
+.vote-card.left b{color:#8a75d3 !important}.vote-card.right b{color:#c9789c !important}
+.vote-card span,.missing-card span{color:#9a8fa6 !important}
+.missing-card.active{background:#fff1f6 !important;border-color:#f2c8d7 !important}
+
+.pred{
+  background:#fff !important;border:1.5px solid #eee5f0 !important;
+  border-radius:13px !important;box-shadow:0 4px 11px rgba(174,151,191,.045) !important;
+}
+.name{color:#5c5267 !important}
+.pick{background:#fff !important;border:1.5px solid #e3d8e8 !important;color:#6c6179 !important;border-radius:11px !important}
+.pick.on{background:linear-gradient(135deg,#c2adff,#f0aecb) !important;color:#fff !important;border-color:transparent !important;box-shadow:0 5px 14px rgba(183,148,215,.14) !important}
+
+.post-result-bar{
+  background:linear-gradient(135deg,#faf6ff,#fff5fa) !important;
+  border:1.5px solid #e5d7eb !important;border-radius:16px !important;
+}
+.post-result-text{color:#786b84 !important}
+
+table{color:#5d5368 !important}
+th{color:#a095aa !important;border-bottom-color:#eadfeb !important}
+td{border-bottom-color:#f0e8f1 !important}
+table tbody tr:hover{background:#fff9fc !important}
+
+.hist{
+  color:#655a71 !important;border:1px solid transparent !important;
+  border-radius:12px !important;
+}
+.hist:hover{background:#fff8fc !important;border-color:#eadfeb !important}
+.hist.current{background:linear-gradient(135deg,#f4eeff,#fff1f6) !important;border-color:#ddcbea !important}
+.small{color:#9a8fa6 !important}
+
+.modal{background:rgba(76,63,88,.26) !important;backdrop-filter:blur(6px) !important}
+.dialog{
+  background:linear-gradient(145deg,#fff 0%,#fffafd 100%) !important;
+  border:1.5px solid #e6d9ea !important;
+  box-shadow:0 24px 65px rgba(85,61,101,.18) !important;
+  color:#574d63 !important;
+}
+.dialog h3{color:#6d6080 !important}
+.hint,.field label{color:#978ba3 !important}
+.field input,.field textarea,.field select,.schedule-row input,.race-select{
+  background:#fff !important;color:#574d63 !important;
+  border:1.5px solid #e1d5e7 !important;border-radius:11px !important;
+  box-shadow:0 1px 0 rgba(255,255,255,.95) inset !important;
+}
+.field input:focus,.field textarea:focus,.field select:focus,.schedule-row input:focus,.race-select:focus{
+  outline:none !important;border-color:#b79cff !important;
+  box-shadow:0 0 0 3px rgba(183,156,255,.13) !important;
+}
+
+.schedule-dialog .schedule-head{color:#978ca2 !important}
+.schedule-dialog .schedule-row{
+  background:linear-gradient(180deg,#fff 0%,#fffafd 100%) !important;
+  border:1.5px solid #e9dfec !important;border-radius:14px !important;
+}
+.schedule-dialog>.toolbar{background:rgba(255,250,253,.97) !important;border-top-color:#e7dbea !important}
+.game-no{color:#a486d8 !important}
+.mini{background:#fff !important;color:#6e627c !important;border:1.5px solid #e2d7e7 !important;border-radius:10px !important}
+.mini.danger{background:#fff1f5 !important;color:#c15f76 !important;border-color:#f3c5d2 !important}
+
+/* 종족 배지: P 노랑 / T 파랑 / Z 보라 */
+.race-p{background:#fff4c7 !important;color:#9a7513 !important;border-color:#ead479 !important}
+.race-t{background:#e6f1ff !important;color:#477ab6 !important;border-color:#bfd9f5 !important}
+.race-z{background:#f1e7ff !important;color:#7e50aa !important;border-color:#dac6f0 !important}
+.race-r{background:#eaf8f2 !important;color:#5b907b !important;border-color:#cce9dc !important}
+
+.credit{color:#b1a7b7 !important}.credit b{color:#8a7c94 !important}
+
+::-webkit-scrollbar-track{background:#fff8fc !important}
+::-webkit-scrollbar-thumb{background:#ddcfE5 !important;border-radius:10px !important}
+::-webkit-scrollbar-thumb:hover{background:#cbb9d6 !important}
+
+@media(min-width:1101px){
+  .card{padding:13px 14px !important}
+  .btn{padding:8px 11px !important}
+  .player{padding:13px 9px !important}
+}
+
+@media(max-width:700px){
+  body:not(.force-desktop) header{background:rgba(255,250,253,.94) !important;border-bottom:1px solid #eadfeb !important}
+  body:not(.force-desktop) .brand{width:100% !important;border-radius:16px !important}
+  body:not(.force-desktop) .card{border-radius:18px !important}
+}
