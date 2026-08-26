@@ -199,3 +199,24 @@ table tbody tr:hover{background:#fff9fc !important}
   body:not(.force-desktop) .brand{width:100% !important;border-radius:16px !important}
   body:not(.force-desktop) .card{border-radius:18px !important}
 }
+
+/* ===== v6.0.2 하단 배경 자연스러운 마무리 ===== */
+html{
+  min-height:100% !important;
+  background:#fff9fc !important;
+}
+body{
+  min-height:100vh !important;
+  background:
+    radial-gradient(circle at 4% 0%,rgba(255,221,238,.70) 0,transparent 25%),
+    radial-gradient(circle at 96% 3%,rgba(222,240,255,.80) 0,transparent 24%),
+    radial-gradient(ellipse at 50% 115%,rgba(242,226,255,.52) 0,transparent 48%),
+    linear-gradient(180deg,#fffafd 0%,#fafbff 62%,#fff8fc 100%) !important;
+  background-attachment:fixed !important;
+}
+.credit{
+  background:transparent !important;
+  padding:18px 0 30px !important;
+  margin:0 !important;
+}
+
