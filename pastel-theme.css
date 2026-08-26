@@ -220,3 +220,17 @@ body{
   margin:0 !important;
 }
 
+
+
+/* ===== v6.0.3 상단 헤더 양끝 띠 제거 ===== */
+header{
+  background:transparent !important;
+  border-bottom:0 !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+}
+body:not(.force-desktop) header{
+  background:transparent !important;
+  border-bottom:0 !important;
+}
+.wrap{background:transparent !important;}
