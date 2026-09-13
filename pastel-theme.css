@@ -276,3 +276,12 @@ header::before{
 body.embedded .wrap{padding-top:8px !important}
 body.embedded header{padding:4px 0 8px !important;margin-bottom:8px !important}
 body.embedded header .brand{display:none !important}
+
+/* ===== v6.0.7 대진표 종족 선택 폭 보정 ===== */
+.schedule-dialog .schedule-head,.schedule-dialog .schedule-row{
+  grid-template-columns:48px minmax(130px,.85fr) 148px minmax(130px,.85fr) 148px 126px !important;
+}
+.schedule-dialog .race-select{padding-left:10px !important;padding-right:24px !important;font-size:13px !important}
+@media(max-width:900px){
+  .schedule-dialog .schedule-row{grid-template-columns:42px minmax(0,1fr) 138px !important}
+}
