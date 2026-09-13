@@ -285,3 +285,26 @@ body.embedded header .brand{display:none !important}
 @media(max-width:900px){
   .schedule-dialog .schedule-row{grid-template-columns:42px minmax(0,1fr) 138px !important}
 }
+
+/* ===== v6.1.0 통합 티어·종족 자동 입력 ===== */
+body.embedded #viewToggle{display:none !important}
+.schedule-dialog .tier-select{
+  width:100%;min-width:0;padding:10px 8px;border:1.5px solid #e1d5e7;border-radius:11px;
+  background:#fff;color:#574d63;font-size:13px;font-weight:800;
+}
+.schedule-dialog .schedule-head,.schedule-dialog .schedule-row{
+  grid-template-columns:44px minmax(105px,.8fr) 92px 122px minmax(105px,.8fr) 92px 122px 112px !important;
+}
+@media(max-width:900px){
+  .schedule-dialog .schedule-row{grid-template-columns:42px minmax(0,1fr) 92px 128px !important}
+  .schedule-dialog .game-no{grid-column:1;grid-row:1 / span 2}
+  .schedule-dialog .p1-input{grid-column:2;grid-row:1}.schedule-dialog .tier1-select{grid-column:3;grid-row:1}.schedule-dialog .race1-select{grid-column:4;grid-row:1}
+  .schedule-dialog .p2-input{grid-column:2;grid-row:2}.schedule-dialog .tier2-select{grid-column:3;grid-row:2}.schedule-dialog .race2-select{grid-column:4;grid-row:2}
+  .schedule-dialog .row-actions{grid-column:1/-1;grid-row:3}
+}
+@media(max-width:560px){
+  .schedule-dialog .schedule-row{grid-template-columns:34px minmax(0,1fr) !important}
+  .schedule-dialog .game-no{grid-column:1;grid-row:1 / span 6}
+  .schedule-dialog .p1-input,.schedule-dialog .tier1-select,.schedule-dialog .race1-select,.schedule-dialog .p2-input,.schedule-dialog .tier2-select,.schedule-dialog .race2-select{grid-column:2 !important;grid-row:auto}
+  .schedule-dialog .row-actions{grid-column:1/-1 !important;grid-row:auto}
+}
