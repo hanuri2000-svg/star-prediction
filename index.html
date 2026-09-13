@@ -303,7 +303,7 @@ header .danger{
 <script>if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embedded')</script>
 <div class="wrap">
 <header>
-<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v6.1.0</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
+<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v6.2.0</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
 <button class="btn" onclick="openParticipants()">참가자</button>
 <button class="btn" onclick="quickAddParticipant()">＋ 빠른 참가자</button>
 <button class="btn" onclick="openEventSettings()">대회/팀 설정</button>
@@ -377,11 +377,39 @@ function ensurePlayerMetaMemory(){
   if(!data.playerTiers||typeof data.playerTiers!=='object'||Array.isArray(data.playerTiers))data.playerTiers={};
 }
 function normalizePlayerKey(v){return String(v||'').trim().replace(/\s+/g,' ').toLocaleLowerCase()}
+const SHARED_PLAYER_MASTER_URL='https://hanuri2000-svg.github.io/star-match-manager/players.json';
+let SHARED_PLAYER_DIRECTORY={};
+function masterPlayerKey(name){return String(name||'').normalize('NFKC').replace(/\s+/g,'').replace(/[^0-9a-z가-힣]/gi,'').toLowerCase()}
 function directoryPlayer(name){
-  const key=String(name||'').normalize('NFKC').replace(/\s+/g,'').replace(/[^0-9a-z가-힣]/gi,'').toLowerCase();
+  const key=masterPlayerKey(name);
   if(!key)return null;
+  if(SHARED_PLAYER_DIRECTORY[key])return SHARED_PLAYER_DIRECTORY[key];
   try{return (window.parent?.HARINA_PLAYER_DIRECTORY||window.HARINA_PLAYER_DIRECTORY||{})[key]||null}catch{return null}
 }
+async function loadSharedPlayerMaster(force=false){
+  try{
+    const res=await fetch(SHARED_PLAYER_MASTER_URL+(force?'?t='+Date.now():''),{cache:'no-store'});
+    if(!res.ok)throw new Error('shared player DB load failed');
+    const payload=await res.json(),list=Array.isArray(payload.players)?payload.players:[];
+    const directory={};
+    list.filter(p=>p&&p.active!==false&&p.name).forEach(p=>{
+      const meta={name:p.name,tier:p.tier||'',race:p.race||''};
+      directory[masterPlayerKey(p.name)]=meta;
+      (p.aliases||[]).forEach(a=>{if(a)directory[masterPlayerKey(a)]=meta});
+    });
+    SHARED_PLAYER_DIRECTORY=directory;
+    window.HARINA_PLAYER_DIRECTORY=Object.assign({},window.HARINA_PLAYER_DIRECTORY||{},directory);
+    let dl=document.getElementById('masterPlayerNames');
+    if(!dl){dl=document.createElement('datalist');dl.id='masterPlayerNames';document.body.appendChild(dl)}
+    dl.innerHTML=list.filter(p=>p&&p.active!==false&&p.name).map(p=>`<option value="${esc(p.name)}">${esc(p.tier||'')} · ${esc(p.race||'')}</option>`).join('');
+    document.querySelectorAll('#np1,#np2,.p1-input,.p2-input').forEach(el=>el.setAttribute('list','masterPlayerNames'));
+    if(document.getElementById('np1'))autoPlayerMeta('np1','nr1','nt1');
+    if(document.getElementById('np2'))autoPlayerMeta('np2','nr2','nt2');
+  }catch(e){console.warn('공용 선수 DB 불러오기 실패, 통합페이지/로컬 기억값 사용',e)}
+}
+setTimeout(()=>loadSharedPlayerMaster(false),0);
+const __masterPlayerObserver=new MutationObserver(()=>document.querySelectorAll('#np1,#np2,.p1-input,.p2-input').forEach(el=>el.setAttribute('list','masterPlayerNames')));
+window.addEventListener('DOMContentLoaded',()=>__masterPlayerObserver.observe(document.body,{childList:true,subtree:true}));
 function rememberedRace(name){ensurePlayerMetaMemory();return data.playerRaces[normalizePlayerKey(name)]||''}
 function rememberedTier(name){ensurePlayerMetaMemory();return data.playerTiers[normalizePlayerKey(name)]||''}
 function rememberRace(name,race){
@@ -771,7 +799,7 @@ function toggleDesktopMode(){
 }
 window.addEventListener('DOMContentLoaded',applyViewMode);
 
-const APP_VERSION='6.1.0';
+const APP_VERSION='6.2.0';
 let __updateBusy=false;
 
 async function checkForUpdate(force=false){
@@ -805,7 +833,7 @@ async function checkForUpdate(force=false){
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=6.1.0',{updateViaCache:'none'});
+      const reg=await navigator.serviceWorker.register('./sw.js?v=6.2.0',{updateViaCache:'none'});
       reg.update().catch(()=>{});
     }catch(e){ console.warn('SW 등록 실패',e); }
     checkForUpdate(false);
