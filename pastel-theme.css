@@ -270,3 +270,9 @@ header::before{
   body:not(.force-desktop) .brand{min-width:0 !important;min-height:66px !important;padding-left:76px !important}
   body:not(.force-desktop) .brand::before{left:6px;width:64px;height:66px}
 }
+
+
+/* ===== v6.0.6 통합 페이지용 컴팩트 헤더 ===== */
+body.embedded .wrap{padding-top:8px !important}
+body.embedded header{padding:4px 0 8px !important;margin-bottom:8px !important}
+body.embedded header .brand{display:none !important}
