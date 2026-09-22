@@ -296,6 +296,39 @@ header .danger{
 
 
 
+
+/* ===== v6.3.0 ASL 1·2등 진출 예측 ===== */
+.asl-open-btn{white-space:nowrap}
+.asl-dialog{width:min(980px,96vw)!important}
+.asl-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.asl-top h3{margin:0 0 4px}
+.asl-top p{margin:0;color:var(--muted);font-size:12px;line-height:1.5}
+.asl-grid{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(430px,1.2fr);gap:14px}
+.asl-panel{border:1.5px solid #e8ddeb;border-radius:16px;background:rgba(255,255,255,.86);padding:13px}
+.asl-panel h4{margin:0 0 10px;color:#71647f}
+.asl-add{display:grid;grid-template-columns:1fr auto;gap:7px}
+.asl-candidates{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.asl-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid #e4d7e9;border-radius:999px;background:#fff;color:#65596f;font-size:12px;font-weight:850}
+.asl-chip button{border:0;background:transparent;color:#b27b92;padding:0;font-weight:950}
+.asl-result-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.asl-result-grid select,.asl-pick-select,.asl-add input{width:100%;border:1.5px solid #e1d5e7;border-radius:10px;background:#fff;color:#574d63;padding:9px}
+.asl-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}
+.asl-summary>div{padding:9px;border:1px solid #eadfeb;border-radius:12px;background:linear-gradient(135deg,#fff,#fff8fc);text-align:center}
+.asl-summary b{display:block;font-size:17px;color:#8067a3}.asl-summary span{font-size:10px;color:#9c90a7}
+.asl-table{display:grid;gap:6px;max-height:52vh;overflow:auto;padding-right:2px}
+.asl-row{display:grid;grid-template-columns:minmax(90px,.8fr) minmax(140px,1fr) minmax(140px,1fr) 92px;gap:7px;align-items:center;padding:7px;border:1px solid #eee5f0;border-radius:12px;background:#fff}
+.asl-row.head{position:sticky;top:0;z-index:2;background:#f7effa;color:#8b7a95;font-size:11px;font-weight:900}
+.asl-name{font-weight:900;color:#5f536a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.asl-score{text-align:center;font-size:11px;font-weight:900;color:#8a7b94}
+.asl-score.perfect{color:#5a987e}.asl-score.partial{color:#a07d37}
+.asl-locked-note{margin-top:8px;padding:8px 10px;border-radius:10px;background:#f5effb;color:#806d90;font-size:11px}
+@media(max-width:780px){
+ .asl-grid{grid-template-columns:1fr}
+ .asl-row{grid-template-columns:90px 1fr 1fr}
+ .asl-row .asl-score{grid-column:1/-1;text-align:right}
+ .asl-summary{grid-template-columns:1fr 1fr 1fr}
+}
+
 </style>
 <link rel="stylesheet" href="./pastel-theme.css?v=6.1.0">
 </head>
@@ -303,11 +336,12 @@ header .danger{
 <script>if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embedded')</script>
 <div class="wrap">
 <header>
-<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v6.2.0</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
+<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v6.3.0</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
 <button class="btn" onclick="openParticipants()">참가자</button>
 <button class="btn" onclick="quickAddParticipant()">＋ 빠른 참가자</button>
 <button class="btn" onclick="openEventSettings()">대회/팀 설정</button>
 <button class="btn" onclick="openSchedule()">대진표 관리</button>
+<button class="btn asl-open-btn" onclick="openAsl()">🏆 ASL 1·2등</button>
 <button class="btn view-toggle" id="viewToggle" onclick="toggleDesktopMode()">🖥 PC 화면</button>
 <button class="btn" onclick="exportData()">백업</button>
 <button class="btn" onclick="checkForUpdate(true)">업데이트 확인</button>
@@ -370,8 +404,20 @@ header .danger{
 
 <script>
 const KEY='starPredictionManager_v31';
-function blank(){return {tournament:'새 대회',teamA:'',teamB:'',participants:[],matches:[],current:-1,playerRaces:{},playerTiers:{},version:31}}
+function blank(){return {tournament:'새 대회',teamA:'',teamB:'',participants:[],matches:[],current:-1,playerRaces:{},playerTiers:{},asl:{title:'ASL',candidates:[],picks:{},locked:false,result:{first:'',second:''}},version:31}}
 let data=load();
+function ensureAslData(){
+  if(!data.asl||typeof data.asl!=='object'||Array.isArray(data.asl))data.asl={};
+  if(typeof data.asl.title!=='string')data.asl.title='ASL';
+  if(!Array.isArray(data.asl.candidates))data.asl.candidates=[];
+  data.asl.candidates=[...new Set(data.asl.candidates.map(x=>String(x||'').trim()).filter(Boolean))];
+  if(!data.asl.picks||typeof data.asl.picks!=='object'||Array.isArray(data.asl.picks))data.asl.picks={};
+  data.asl.locked=!!data.asl.locked;
+  if(!data.asl.result||typeof data.asl.result!=='object'||Array.isArray(data.asl.result))data.asl.result={first:'',second:''};
+  data.asl.result.first=String(data.asl.result.first||'');
+  data.asl.result.second=String(data.asl.result.second||'');
+}
+ensureAslData();
 function ensurePlayerMetaMemory(){
   if(!data.playerRaces||typeof data.playerRaces!=='object'||Array.isArray(data.playerRaces))data.playerRaces={};
   if(!data.playerTiers||typeof data.playerTiers!=='object'||Array.isArray(data.playerTiers))data.playerTiers={};
@@ -559,6 +605,92 @@ function setWinner(v){
 function clearWinner(){let m=current();if(m){m.winner=null;save()}}
 function duplicateMatch(){let m=current();if(!m)return;data.matches.push({p1:m.p1,p2:m.p2,race1:m.race1||'',race2:m.race2||'',team1:m.team1||'',team2:m.team2||'',picks:{},locked:false,winner:null});data.current=data.matches.length-1;save()}
 function deleteCurrentMatch(){if(data.current<0||!confirm('현재 경기를 삭제할까?'))return;data.matches.splice(data.current,1);data.current=Math.min(data.current,data.matches.length-1);save()}
+
+function aslOptionList(selected='',blank='선택'){
+  ensureAslData();
+  return '<option value="">'+esc(blank)+'</option>'+data.asl.candidates.map(name=>'<option value="'+esc(name)+'" '+(name===selected?'selected':'')+'>'+esc(name)+'</option>').join('');
+}
+function aslPickFor(name){
+  ensureAslData();
+  if(!data.asl.picks[name]||typeof data.asl.picks[name]!=='object')data.asl.picks[name]={first:'',second:''};
+  return data.asl.picks[name];
+}
+function openAsl(){
+  ensureAslData();
+  modal('<div class="asl-top"><div><h3>🏆 ASL 1·2등 진출 예측</h3><p>후보 선수를 등록한 뒤 참가자마다 1등·2등 진출자를 선택해. 실제 결과 입력 후 자리별 적중을 확인할 수 있어.</p></div></div><div id="aslBody"></div>');
+  document.getElementById('dialog').classList.add('asl-dialog');
+  renderAslModal();
+}
+function renderAslModal(){
+  ensureAslData();
+  const box=document.getElementById('aslBody');if(!box)return;
+  const a=data.asl, resultReady=!!(a.result.first&&a.result.second);
+  let firstHits=0,secondHits=0,perfect=0;
+  data.participants.forEach(n=>{const p=aslPickFor(n),f=resultReady&&p.first===a.result.first,s=resultReady&&p.second===a.result.second;if(f)firstHits++;if(s)secondHits++;if(f&&s)perfect++;});
+  const rows=data.participants.map(n=>{
+    const p=aslPickFor(n),f=resultReady&&p.first===a.result.first,s=resultReady&&p.second===a.result.second,score=(f?1:0)+(s?1:0);
+    const status=!resultReady?'대기':score===2?'2/2 완벽':score===1?'1/2 적중':'0/2';
+    const cls=score===2?'perfect':score===1?'partial':'';
+    return '<div class="asl-row"><div class="asl-name">'+esc(n)+'</div>'+
+      '<select class="asl-pick-select" '+(a.locked||resultReady?'disabled':'')+' onchange="setAslPick(\''+encodeURIComponent(n)+'\',\'first\',this.value)">'+aslOptionList(p.first,'1등 선택')+'</select>'+
+      '<select class="asl-pick-select" '+(a.locked||resultReady?'disabled':'')+' onchange="setAslPick(\''+encodeURIComponent(n)+'\',\'second\',this.value)">'+aslOptionList(p.second,'2등 선택')+'</select>'+
+      '<div class="asl-score '+cls+'">'+status+'</div></div>';
+  }).join('');
+  box.innerHTML=
+    '<div class="asl-grid">'+
+      '<section class="asl-panel"><h4>ASL 후보 / 설정</h4>'+
+        '<div class="field"><label>구분 이름</label><input value="'+esc(a.title||'ASL')+'" oninput="setAslTitle(this.value)" placeholder="예: ASL 24강 A조"></div>'+
+        '<div class="asl-add"><input id="aslCandidateInput" list="masterPlayerNames" placeholder="후보 선수 이름"><button class="btn primary" onclick="addAslCandidate()">＋ 후보</button></div>'+
+        '<div class="asl-candidates">'+(a.candidates.length?a.candidates.map(name=>'<span class="asl-chip">'+esc(name)+(a.locked?'':'<button onclick="removeAslCandidate(\''+encodeURIComponent(name)+'\')" title="삭제">×</button>')+'</span>').join(''):'<span class="small">후보 선수를 먼저 추가해줘.</span>')+'</div>'+
+        '<div class="toolbar" style="margin-top:11px"><button class="btn '+(a.locked?'':'primary')+'" onclick="toggleAslLock()">'+(a.locked?'🔓 예측 다시 열기':'🔒 ASL 예측 마감')+'</button><button class="btn danger" onclick="resetAsl()">ASL 초기화</button></div>'+
+        '<div class="asl-locked-note">'+(a.locked?'현재 ASL 예측은 마감 상태야. 결과 입력은 가능해.':'예측을 마감하기 전까지 참가자 선택을 수정할 수 있어.')+'</div>'+
+      '</section>'+
+      '<section class="asl-panel"><h4>실제 진출 결과</h4>'+
+        '<div class="asl-result-grid"><div class="field"><label>실제 1등 진출</label><select onchange="setAslResult(\'first\',this.value)">'+aslOptionList(a.result.first,'1등 결과')+'</select></div><div class="field"><label>실제 2등 진출</label><select onchange="setAslResult(\'second\',this.value)">'+aslOptionList(a.result.second,'2등 결과')+'</select></div></div>'+
+        '<div class="toolbar"><button class="btn" onclick="clearAslResult()">결과 취소</button></div>'+
+        '<div class="asl-summary"><div><b>'+firstHits+'</b><span>1등 적중</span></div><div><b>'+secondHits+'</b><span>2등 적중</span></div><div><b>'+perfect+'</b><span>둘 다 적중</span></div></div>'+
+        '<div class="asl-table"><div class="asl-row head"><div>참가자</div><div>1등 진출</div><div>2등 진출</div><div>결과</div></div>'+ (rows||'<div class="small">참가자를 먼저 등록해줘.</div>') +'</div>'+
+      '</section>'+
+    '</div>';
+}
+function setAslTitle(v){ensureAslData();data.asl.title=String(v||'').trim()||'ASL';localStorage.setItem(KEY,JSON.stringify(data))}
+function addAslCandidate(){
+  ensureAslData();if(data.asl.locked)return;
+  const input=document.getElementById('aslCandidateInput'),name=String(input?.value||'').trim();
+  if(!name)return alert('후보 선수 이름을 입력해줘.');
+  if(data.asl.candidates.includes(name))return alert('이미 등록된 후보야.');
+  data.asl.candidates.push(name);localStorage.setItem(KEY,JSON.stringify(data));render();renderAslModal();
+}
+function removeAslCandidate(encoded){
+  ensureAslData();if(data.asl.locked)return;
+  const name=decodeURIComponent(encoded);
+  data.asl.candidates=data.asl.candidates.filter(x=>x!==name);
+  Object.values(data.asl.picks).forEach(p=>{if(p?.first===name)p.first='';if(p?.second===name)p.second=''});
+  if(data.asl.result.first===name)data.asl.result.first='';
+  if(data.asl.result.second===name)data.asl.result.second='';
+  localStorage.setItem(KEY,JSON.stringify(data));render();renderAslModal();
+}
+function setAslPick(encoded,place,value){
+  ensureAslData();if(data.asl.locked||data.asl.result.first&&data.asl.result.second)return;
+  const name=decodeURIComponent(encoded),p=aslPickFor(name);
+  const other=place==='first'?'second':'first';
+  if(value&&p[other]===value){alert('1등과 2등은 같은 선수를 선택할 수 없어.');renderAslModal();return}
+  p[place]=value;localStorage.setItem(KEY,JSON.stringify(data));renderAslModal();
+}
+function toggleAslLock(){ensureAslData();if(!data.asl.candidates.length)return alert('후보 선수를 먼저 등록해줘.');data.asl.locked=!data.asl.locked;localStorage.setItem(KEY,JSON.stringify(data));render();renderAslModal()}
+function setAslResult(place,value){
+  ensureAslData();const other=place==='first'?'second':'first';
+  if(value&&data.asl.result[other]===value){alert('실제 1등과 2등은 같은 선수일 수 없어.');renderAslModal();return}
+  if(value&&!data.asl.locked){if(!confirm('ASL 예측을 마감하고 실제 결과를 입력할까?')){renderAslModal();return}data.asl.locked=true}
+  data.asl.result[place]=value;localStorage.setItem(KEY,JSON.stringify(data));render();renderAslModal();
+}
+function clearAslResult(){ensureAslData();data.asl.result={first:'',second:''};localStorage.setItem(KEY,JSON.stringify(data));render();renderAslModal()}
+function resetAsl(){
+  if(!confirm('ASL 후보·예측·결과를 모두 초기화할까? 참가자 명단은 유지돼.'))return;
+  data.asl={title:'ASL',candidates:[],picks:{},locked:false,result:{first:'',second:''}};
+  localStorage.setItem(KEY,JSON.stringify(data));render();renderAslModal();
+}
+
 function resetTournament(){if(!confirm('경기/예측/순위를 초기화할까? 참가자와 선수 명단은 유지돼.'))return;data.matches=[];data.current=-1;save()}
 function modal(h){
   const d=document.getElementById('dialog');
@@ -781,7 +913,7 @@ function prevMatch(){
 }
 
 function exportData(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='승자예측_'+data.tournament+'.json';a.click()}
-function restoreData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.participants)||!Array.isArray(x.matches))throw 0;data=x;ensurePlayerMetaMemory();seedPlayerMetaMemory();save()}catch(_){alert('올바른 백업 파일이 아니야.')}};r.readAsText(f)}
+function restoreData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.participants)||!Array.isArray(x.matches))throw 0;data=x;ensureAslData();ensurePlayerMetaMemory();seedPlayerMetaMemory();save()}catch(_){alert('올바른 백업 파일이 아니야.')}};r.readAsText(f)}
 
 
 const VIEW_MODE_KEY='majhyeodorang_view_mode';
@@ -833,7 +965,7 @@ async function checkForUpdate(force=false){
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=6.2.0',{updateViaCache:'none'});
+      const reg=await navigator.serviceWorker.register('./sw.js?v=6.3.0',{updateViaCache:'none'});
       reg.update().catch(()=>{});
     }catch(e){ console.warn('SW 등록 실패',e); }
     checkForUpdate(false);
