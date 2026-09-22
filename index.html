@@ -329,6 +329,34 @@ header .danger{
  .asl-summary{grid-template-columns:1fr 1fr 1fr}
 }
 
+.asl-inline-card{
+  margin:10px 0 16px;padding:16px 18px;border:1.5px solid #e5d8e9;border-radius:19px;
+  background:radial-gradient(circle at 92% 10%,rgba(218,202,255,.22),transparent 28%),linear-gradient(135deg,rgba(255,250,253,.98),rgba(249,245,255,.98));
+  box-shadow:0 8px 24px rgba(111,83,137,.05)
+}
+.asl-inline-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.asl-inline-title h3{margin:0 0 3px;color:#554b60;font-size:18px;letter-spacing:-.25px}
+.asl-inline-title p{margin:0;color:#8f8299;font-size:11px;font-weight:750}
+.asl-inline-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.asl-inline-status{margin:16px 0 12px;color:#62586d;font-size:18px;font-weight:950;letter-spacing:-.35px}
+.asl-inline-status b{color:#7d6a91}
+.asl-inline-empty{display:grid;place-items:center;min-height:90px;padding:18px;border-radius:15px;background:rgba(255,255,255,.46);color:#9a8da4;font-size:16px;font-weight:850;text-align:center}
+.asl-inline-result{display:flex;gap:8px;flex-wrap:wrap;margin:-3px 0 11px}
+.asl-inline-result span{padding:6px 9px;border:1px solid #e5d9e9;border-radius:999px;background:#fff;color:#756580;font-size:11px;font-weight:850}
+.asl-inline-list{display:grid;gap:7px}
+.asl-inline-row{display:grid;grid-template-columns:minmax(92px,.72fr) minmax(145px,1fr) minmax(145px,1fr) 86px;gap:7px;align-items:center;padding:7px 8px;border:1px solid #eee4f0;border-radius:13px;background:rgba(255,255,255,.88)}
+.asl-inline-row.head{padding:2px 8px 5px;border:0;background:transparent;color:#9a8ea4;font-size:10px;font-weight:900}
+.asl-inline-name{font-weight:900;color:#61556c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.asl-inline-select{width:100%;padding:8px 9px;border:1.5px solid #e4d8e9;border-radius:10px;background:#fff;color:#5d5267;font-size:12px;font-weight:800}
+.asl-inline-select:disabled{opacity:.68;background:#faf7fb}
+.asl-inline-score{text-align:center;color:#95899e;font-size:11px;font-weight:900}
+.asl-inline-score.perfect{color:#4b9a78}.asl-inline-score.partial{color:#b18a3c}
+@media(max-width:760px){
+ .asl-inline-card{padding:14px 13px}.asl-inline-head{align-items:stretch;flex-direction:column}.asl-inline-actions{justify-content:stretch}
+ .asl-inline-actions .btn{flex:1}.asl-inline-status{font-size:16px;margin-top:13px}.asl-inline-row{grid-template-columns:78px 1fr 1fr}
+ .asl-inline-row .asl-inline-score{grid-column:1/-1;text-align:right}.asl-inline-row.head>div:last-child{display:none}
+}
+
 </style>
 <link rel="stylesheet" href="./pastel-theme.css?v=6.1.0">
 </head>
@@ -336,12 +364,11 @@ header .danger{
 <script>if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embedded')</script>
 <div class="wrap">
 <header>
-<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v6.3.0</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
+<div class="brand"><h1><span class="brand-icon">✦</span> 맞혀도랑 <span class="version">v6.3.1</span></h1><div class="subtitle">오늘의 스타 승부, 누가 제일 잘 맞힐까?</div></div>
 <button class="btn" onclick="openParticipants()">참가자</button>
 <button class="btn" onclick="quickAddParticipant()">＋ 빠른 참가자</button>
 <button class="btn" onclick="openEventSettings()">대회/팀 설정</button>
 <button class="btn" onclick="openSchedule()">대진표 관리</button>
-<button class="btn asl-open-btn" onclick="openAsl()">🏆 ASL 1·2등</button>
 <button class="btn view-toggle" id="viewToggle" onclick="toggleDesktopMode()">🖥 PC 화면</button>
 <button class="btn" onclick="exportData()">백업</button>
 <button class="btn" onclick="checkForUpdate(true)">업데이트 확인</button>
@@ -358,6 +385,8 @@ header .danger{
 <div class="sep">:</div>
 <div class="team"><div class="teamname" id="teamBName"></div><div class="score" id="teamBScore">0</div></div>
 </div>
+
+<section id="aslInlineCard" class="asl-inline-card"></section>
 
 <div class="toolbar">
 <button class="btn primary" onclick="openNewMatch()">＋ 경기 추가</button>
@@ -539,6 +568,7 @@ function render(){
  document.getElementById('teamAName').textContent=data.teamA||'팀 A';
  document.getElementById('teamBName').textContent=data.teamB||'팀 B';
  document.getElementById('teamAScore').textContent=s.a; document.getElementById('teamBScore').textContent=s.b;
+ renderAslInline();
  document.getElementById('p1').innerHTML=m?`${esc(m.p1)} ${raceBadge(m.race1||'')}${m.team1?'<span class="teamtag">'+esc(teamLabel(m.team1))+'</span>':''}`:'선수 A';
  document.getElementById('p2').innerHTML=m?`${esc(m.p2)} ${raceBadge(m.race2||'')}${m.team2?'<span class="teamtag">'+esc(teamLabel(m.team2))+'</span>':''}`:'선수 B';
  document.getElementById('win1').textContent=(m?m.p1:'선수 A')+' 승';
@@ -615,9 +645,42 @@ function aslPickFor(name){
   if(!data.asl.picks[name]||typeof data.asl.picks[name]!=='object')data.asl.picks[name]={first:'',second:''};
   return data.asl.picks[name];
 }
+
+function renderAslInline(){
+  ensureAslData();
+  const box=document.getElementById('aslInlineCard');if(!box)return;
+  const a=data.asl,total=data.participants.length,resultReady=!!(a.result.first&&a.result.second);
+  let completed=0,firstHits=0,secondHits=0,perfect=0;
+  data.participants.forEach(n=>{
+    const p=aslPickFor(n);if(p.first&&p.second)completed++;
+    if(resultReady){const f=p.first===a.result.first,s=p.second===a.result.second;if(f)firstHits++;if(s)secondHits++;if(f&&s)perfect++}
+  });
+  const state=resultReady?'결과 확정':a.locked?'마감':'진행중';
+  let body='';
+  if(!a.candidates.length){
+    body='<div class="asl-inline-empty">선수·결과 설정에서 ASL 출전 선수를 먼저 등록해줘.</div>';
+  }else if(!total){
+    body='<div class="asl-inline-empty">상단 참가자 관리에서 예측 참가자를 먼저 등록해줘.</div>';
+  }else{
+    const rows=data.participants.map(n=>{
+      const p=aslPickFor(n),f=resultReady&&p.first===a.result.first,s=resultReady&&p.second===a.result.second,score=(f?1:0)+(s?1:0);
+      const label=!resultReady?(p.first&&p.second?'선택 완료':'선택 필요'):score===2?'2/2 적중':score===1?'1/2 적중':'0/2';
+      const cls=score===2?'perfect':score===1?'partial':'',disabled=(a.locked||resultReady)?'disabled':'';
+      return '<div class="asl-inline-row"><div class="asl-inline-name">'+esc(n)+'</div>'+
+        '<select class="asl-inline-select" '+disabled+' onchange="setAslPick(\''+encodeURIComponent(n)+'\',\'first\',this.value)">'+aslOptionList(p.first,'1등 진출')+'</select>'+
+        '<select class="asl-inline-select" '+disabled+' onchange="setAslPick(\''+encodeURIComponent(n)+'\',\'second\',this.value)">'+aslOptionList(p.second,'2등 진출')+'</select>'+
+        '<div class="asl-inline-score '+cls+'">'+label+'</div></div>';
+    }).join('');
+    body=(resultReady?'<div class="asl-inline-result"><span>🥇 실제 1등 '+esc(a.result.first)+'</span><span>🥈 실제 2등 '+esc(a.result.second)+'</span><span>완벽 적중 '+perfect+'명</span></div>':'')+
+      '<div class="asl-inline-list"><div class="asl-inline-row head"><div>참가자</div><div>1등 진출</div><div>2등 진출</div><div>상태</div></div>'+rows+'</div>';
+  }
+  box.innerHTML='<div class="asl-inline-head"><div class="asl-inline-title"><h3>🏆 ASL 우승·준우승 예측</h3><p>참가자별로 1등과 2등을 선택해</p></div>'+
+    '<div class="asl-inline-actions"><button class="btn" onclick="openAsl()">선수·결과 설정</button><button class="btn" onclick="toggleAslLock()">'+(a.locked?'🔓 예측 다시 열기':'🔒 예측 마감')+'</button></div></div>'+
+    '<div class="asl-inline-status">ASL 선수 <b>'+a.candidates.length+'명</b> · 예측 완료 <b>'+completed+'/'+total+'명</b> · <b>'+state+'</b></div>'+body;
+}
 function openAsl(){
   ensureAslData();
-  modal('<div class="asl-top"><div><h3>🏆 ASL 1·2등 진출 예측</h3><p>후보 선수를 등록한 뒤 참가자마다 1등·2등 진출자를 선택해. 실제 결과 입력 후 자리별 적중을 확인할 수 있어.</p></div></div><div id="aslBody"></div>');
+  modal('<div class="asl-top"><div><h3>⚙️ ASL 선수·결과 설정</h3><p>출전 선수 등록과 실제 1등·2등 결과를 관리해. 참가자 예측은 메인 ASL 카드에서 바로 선택해.</p></div></div><div id="aslBody"></div>');
   document.getElementById('dialog').classList.add('asl-dialog');
   renderAslModal();
 }
@@ -965,7 +1028,7 @@ async function checkForUpdate(force=false){
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=6.3.0',{updateViaCache:'none'});
+      const reg=await navigator.serviceWorker.register('./sw.js?v=6.3.1',{updateViaCache:'none'});
       reg.update().catch(()=>{});
     }catch(e){ console.warn('SW 등록 실패',e); }
     checkForUpdate(false);
